@@ -1,0 +1,10 @@
+[
+    {
+        "merged": "com.example.hairup.app-merged_res-51:/xml_backup_rules.xml.flat",
+        "source": "com.example.hairup.app-main-53:/xml/backup_rules.xml"
+    },
+    {
+        "merged": "com.example.hairup.app-merged_res-51:/xml_data_extraction_rules.xml.flat",
+        "source": "com.example.hairup.app-main-53:/xml/data_extraction_rules.xml"
+    }
+]
