@@ -2,18 +2,30 @@ package com.example.hairup.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Burgundy = Color(0xFF670018)
-val Burgundy80 = Color(0xFFA0404C) // Light variant
-val Burgundy40 = Color(0xFF670018) // Dark variant
+// ⚫ Primario: Negro carbón
+val CarbonBlack = Color(0xFF121212)
+val CarbonBlack80 = Color(0xFF2C2C2C) // Variant más claro
+val CarbonBlack40 = Color(0xFF000000) // Variant más oscuro
 
-val Gold = Color(0xFFBFA055)
+// 🟤 Secundario: Marrón cuero
+val LeatherBrown = Color(0xFF8B5E3C)
+val LeatherBrown80 = Color(0xFFA87C5A) // Variant más claro
+val LeatherBrown40 = Color(0xFF6B4629) // Variant más oscuro
+
+// 🟡 Acento: Dorado
+val Gold = Color(0xFFD4AF37)
 val Gold80 = Color(0xFFE2C478)
-val Gold40 = Color(0xFF8A7230)
+val Gold40 = Color(0xFFA68829)
 
-val NeutralBg = Color(0xFFFFFBFE)
-val SurfaceWhite = Color(0xFFFFFFFF)
-val Black = Color(0xFF1C1B1F)
+// ⚪ Texto: Blanco
+val TextWhite = Color(0xFFFFFFFF)
+val TextGray = Color(0xFFB0B0B0)
 
-// Text colors
-val TextPrimary = Color(0xFF1C1B1F)
-val TextSecondary = Color(0xFF49454F)
+// 🔴 Error: Rojo oscuro
+val ErrorRed = Color(0xFFB11226)
+val ErrorRed80 = Color(0xFFD14252)
+val ErrorRed40 = Color(0xFF8B0E1E)
+
+// Backgrounds
+val NeutralBg = Color(0xFF1A1A1A)
+val SurfaceBlack = Color(0xFF121212)

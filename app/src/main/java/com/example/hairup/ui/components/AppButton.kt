@@ -25,14 +25,17 @@ fun AppButton(
             .height(56.dp),
         shape = RoundedCornerShape(12.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary
+            containerColor = androidx.compose.ui.graphics.Color(0xFFD4AF37), // Gold
+            contentColor = androidx.compose.ui.graphics.Color(0xFF121212), // CarbonBlack
+            disabledContainerColor = androidx.compose.ui.graphics.Color(0xFF8B5E3C), // LeatherBrown
+            disabledContentColor = androidx.compose.ui.graphics.Color(0xFF000000)
         ),
         enabled = enabled
     ) {
         Text(
             text = text,
-            style = MaterialTheme.typography.titleMedium
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
         )
     }
 }

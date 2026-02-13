@@ -31,8 +31,8 @@ import com.example.hairup.model.Product
 @Composable
 fun AdminProductsScreen() {
     val products = listOf(
-        Product("1", "Champú Reparador", 25.0, "Reparación intensiva", 50),
-        Product("2", "Acondicionador", 20.0, "Suavidad y brillo", 40)
+        Product(id = 1, name = "Champú Reparador", description = "Reparación intensiva", price = 25.0, image = "", available = true),
+        Product(id = 2, name = "Acondicionador", description = "Suavidad y brillo", price = 20.0, image = "", available = true)
     )
 
     Scaffold(
@@ -56,7 +56,7 @@ fun AdminProductsScreen() {
                     val product = products[index]
                     ListItem(
                         headlineContent = { Text(product.name) },
-                        supportingContent = { Text("$${product.price} - Stock: 100") },
+                        supportingContent = { Text("$${product.price} - ${if (product.available) "Disponible" else "No disponible"}") },
                         trailingContent = {
                             Row {
                                 IconButton(onClick = {}) { Icon(Icons.Default.Edit, null) }
