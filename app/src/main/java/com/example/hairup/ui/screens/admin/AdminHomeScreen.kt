@@ -13,27 +13,27 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AdminPanelSettings
-import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.hairup.model.mockStylists
+import com.example.hairup.data.SessionManager
 import com.example.hairup.ui.components.HairUpBottomBar
 import com.example.hairup.ui.components.adminBottomBarItems
 import com.example.hairup.ui.components.adminPrincipalBottomBarItems
@@ -44,31 +44,41 @@ private val TextGray = Color(0xFFB0B0B0)
 
 @Composable
 fun AdminHomeScreen(
-    stylistId: Int = 0,
     onLogout: () -> Unit = {}
 ) {
-    var selectedItem by remember { mutableStateOf(0) }
-    val stylist = mockStylists.find { it.id == stylistId } ?: mockStylists.first()
-    val isAdminPrincipal = stylistId == 0
+    val context = LocalContext.current
+    val sessionManager = remember { SessionManager(context) }
+    val currentUser = sessionManager.getUser()
+
+    var selectedItem by remember { mutableIntStateOf(0) }
+
+
+    val isAdminPrincipal = currentUser?.id == 1 || currentUser?.email == "admin@hairup.com"
+
     val bottomBarItems = if (isAdminPrincipal) adminPrincipalBottomBarItems else adminBottomBarItems
 
+    LaunchedEffect(currentUser) {
+        if (currentUser == null) {
+            onLogout()
+        }
+    }
+
     Scaffold(
-        containerColor = CarbonBlack,
-        bottomBar = {
+        containerColor = CarbonBlack, bottomBar = {
             HairUpBottomBar(
                 items = bottomBarItems,
                 selectedIndex = selectedItem,
-                onItemSelected = { selectedItem = it }
-            )
-        }
-    ) { innerPadding ->
+                onItemSelected = { selectedItem = it })
+        }) { innerPadding ->
         Column(
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize()
                 .background(CarbonBlack)
         ) {
-            AdminHeader(stylistName = stylist.name, onLogout = onLogout)
+            AdminHeader(
+                stylistName = currentUser?.name ?: "Admin", onLogout = onLogout
+            )
 
             Box(
                 modifier = Modifier
@@ -77,16 +87,16 @@ fun AdminHomeScreen(
             ) {
                 if (isAdminPrincipal) {
                     when (selectedItem) {
-                        0 -> AdminDashboardScreen(stylistId = stylistId)
-                        1 -> AdminAppointmentsScreen(stylistId = stylistId)
+                        0 -> AdminDashboardScreen()
+                        1 -> AdminAppointmentsScreen(stylistId = 0)
                         2 -> AdminProductsScreen()
                         3 -> AdminServicesScreen()
                         4 -> AdminUsersScreen()
                     }
                 } else {
                     when (selectedItem) {
-                        0 -> AdminDashboardScreen(stylistId = stylistId)
-                        1 -> AdminAppointmentsScreen(stylistId = stylistId)
+                        0 -> AdminDashboardScreen()
+                        1 -> AdminAppointmentsScreen(stylistId = currentUser?.id ?: 0)
                         2 -> AdminProductsScreen()
                         3 -> AdminUsersScreen()
                     }
@@ -110,8 +120,7 @@ private fun AdminHeader(stylistName: String, onLogout: () -> Unit) {
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(Gold.copy(alpha = 0.2f)),
-                contentAlignment = Alignment.Center
+                    .background(Gold.copy(alpha = 0.2f)), contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.AdminPanelSettings,
@@ -138,7 +147,7 @@ private fun AdminHeader(stylistName: String, onLogout: () -> Unit) {
 
         IconButton(onClick = onLogout) {
             Icon(
-                imageVector = Icons.Default.Logout,
+                imageVector = Icons.AutoMirrored.Filled.Logout,
                 contentDescription = "Cerrar sesión",
                 tint = TextGray,
                 modifier = Modifier.size(22.dp)

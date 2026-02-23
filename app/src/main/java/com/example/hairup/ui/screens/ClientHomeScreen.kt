@@ -29,7 +29,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -45,14 +47,12 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.runtime.collectAsState
 import com.example.hairup.R
 import com.example.hairup.data.SessionManager
 import com.example.hairup.ui.components.HairUpBottomBar
 import com.example.hairup.ui.components.clientBottomBarItems
 import com.example.hairup.ui.screens.client.AppointmentsScreen
 import com.example.hairup.ui.screens.client.ClientDashboardContent
-import com.example.hairup.ui.screens.client.LoyaltyScreen
 import com.example.hairup.ui.screens.client.ProfileScreen
 import com.example.hairup.ui.screens.client.ShopScreen
 import com.example.hairup.ui.viewmodel.HomeViewModel
@@ -64,8 +64,7 @@ private val Gold = Color(0xFFD4AF37)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ClientHomeScreen(
-    onNavigateToBooking: () -> Unit,
-    onLogout: () -> Unit = {}
+    onNavigateToBooking: () -> Unit, onNavigateToLoyalty: () -> Unit = {}, onLogout: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val sessionManager = remember { SessionManager(context) }
@@ -73,33 +72,28 @@ fun ClientHomeScreen(
         factory = HomeViewModelFactory(sessionManager)
     )
 
-    var selectedItem by remember { mutableStateOf(0) }
+    var selectedItem by remember { mutableIntStateOf(0) }
     var showNotifications by remember { mutableStateOf(false) }
 
     val homeState by viewModel.homeState.collectAsState()
 
-    // Cargar datos al iniciar
     LaunchedEffect(Unit) {
         viewModel.loadHomeData()
     }
 
     Scaffold(
-        containerColor = CarbonBlack,
-        bottomBar = {
+        containerColor = CarbonBlack, bottomBar = {
             HairUpBottomBar(
                 items = clientBottomBarItems,
                 selectedIndex = selectedItem,
-                onItemSelected = { selectedItem = it }
-            )
-        }
-    ) { innerPadding ->
+                onItemSelected = { selectedItem = it })
+        }) { innerPadding ->
         Column(
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize()
                 .background(CarbonBlack)
         ) {
-            // Header con Logo y Notificaciones
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -113,12 +107,9 @@ fun ClientHomeScreen(
                     modifier = Modifier
                         .size(80.dp)
                         .border(
-                            width = 2.dp,
-                            color = Gold,
-                            shape = CircleShape
+                            width = 2.dp, color = Gold, shape = CircleShape
                         )
-                        .padding(6.dp),
-                    contentAlignment = Alignment.Center
+                        .padding(6.dp), contentAlignment = Alignment.Center
                 ) {
                     Image(
                         painter = painterResource(id = R.drawable.logo),
@@ -132,8 +123,7 @@ fun ClientHomeScreen(
 
                 Box {
                     IconButton(
-                        onClick = { showNotifications = !showNotifications }
-                    ) {
+                        onClick = { showNotifications = !showNotifications }) {
                         Box {
                             Icon(
                                 imageVector = Icons.Default.Notifications,
@@ -165,7 +155,6 @@ fun ClientHomeScreen(
                 }
             }
 
-            // Contenido según la tab seleccionada
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -182,6 +171,7 @@ fun ClientHomeScreen(
                                     CircularProgressIndicator(color = Gold)
                                 }
                             }
+
                             is HomeViewModel.HomeState.Success -> {
                                 ClientDashboardContent(
                                     user = state.data.user,
@@ -194,6 +184,7 @@ fun ClientHomeScreen(
                                     onNavigateToLoyalty = onNavigateToLoyalty
                                 )
                             }
+
                             is HomeViewModel.HomeState.Error -> {
                                 Column(
                                     modifier = Modifier.fillMaxSize(),
@@ -201,8 +192,7 @@ fun ClientHomeScreen(
                                     verticalArrangement = Arrangement.Center
                                 ) {
                                     Text(
-                                        text = "Error al cargar",
-                                        color = Color(0xFFB0B0B0)
+                                        text = "Error al cargar", color = Color(0xFFB0B0B0)
                                     )
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text(
@@ -214,8 +204,7 @@ fun ClientHomeScreen(
                                     androidx.compose.material3.Button(
                                         onClick = { viewModel.loadHomeData() },
                                         colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                            containerColor = Gold,
-                                            contentColor = CarbonBlack
+                                            containerColor = Gold, contentColor = CarbonBlack
                                         )
                                     ) {
                                         Text("Reintentar")
@@ -224,12 +213,13 @@ fun ClientHomeScreen(
                             }
                         }
                     }
+
                     1 -> AppointmentsScreen(
                         onNavigateToBooking = onNavigateToBooking
                     )
+
                     2 -> ShopScreen()
-                    3 -> LoyaltyScreen()
-                    4 -> ProfileScreen(onLogout = onLogout)
+                    3 -> ProfileScreen(onLogout = onLogout)
                 }
             }
         }
@@ -252,8 +242,7 @@ private fun NotificationDropdownContent() {
         )
 
         Divider(
-            color = Color(0xFF8B5E3C).copy(alpha = 0.3f),
-            thickness = 1.dp
+            color = Color(0xFF8B5E3C).copy(alpha = 0.3f), thickness = 1.dp
         )
 
         NotificationItem(
@@ -295,13 +284,11 @@ private fun NotificationDropdownContent() {
             modifier = Modifier.padding(horizontal = 12.dp)
         )
 
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { }
-                .padding(16.dp),
-            contentAlignment = Alignment.Center
-        ) {
+        Box(modifier = Modifier
+            .fillMaxWidth()
+            .clickable { }
+            .padding(16.dp),
+            contentAlignment = Alignment.Center) {
             Text(
                 text = "Ver todas las notificaciones",
                 fontSize = 14.sp,
@@ -314,17 +301,12 @@ private fun NotificationDropdownContent() {
 
 @Composable
 private fun NotificationItem(
-    title: String,
-    message: String,
-    time: String,
-    isUnread: Boolean
+    title: String, message: String, time: String, isUnread: Boolean
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { }
-            .padding(12.dp)
-    ) {
+    Row(modifier = Modifier
+        .fillMaxWidth()
+        .clickable { }
+        .padding(12.dp)) {
         if (isUnread) {
             Box(
                 modifier = Modifier
@@ -347,16 +329,11 @@ private fun NotificationItem(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = message,
-                fontSize = 13.sp,
-                color = Color(0xFFB0B0B0),
-                lineHeight = 16.sp
+                text = message, fontSize = 13.sp, color = Color(0xFFB0B0B0), lineHeight = 16.sp
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = time,
-                fontSize = 11.sp,
-                color = Color(0xFF8B5E3C)
+                text = time, fontSize = 11.sp, color = Color(0xFF8B5E3C)
             )
         }
     }

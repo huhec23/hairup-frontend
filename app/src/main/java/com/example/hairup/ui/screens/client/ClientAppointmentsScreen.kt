@@ -14,10 +14,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Cancel
@@ -46,6 +44,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -64,7 +63,6 @@ import com.example.hairup.model.BookingStatus
 import com.example.hairup.ui.viewmodel.AppointmentViewModel
 import com.example.hairup.ui.viewmodel.AppointmentViewModelFactory
 
-// Theme colors
 private val CarbonBlack = Color(0xFF121212)
 private val DarkGray = Color(0xFF1E1E1E)
 private val CardBg = Color(0xFF1A1A1A)
@@ -92,19 +90,16 @@ fun AppointmentsScreen(
     val errorMessage by viewModel.errorMessage.collectAsState()
     val cancelSuccess by viewModel.cancelSuccess.collectAsState()
 
-    var selectedTab by remember { mutableStateOf(0) }
+    var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Próximas", "Historial")
 
-    // Cancel dialog state
     var showCancelDialog by remember { mutableStateOf(false) }
     var appointmentToCancel by remember { mutableStateOf<AppointmentViewModel.AppointmentItem?>(null) }
 
-    // Cargar citas al iniciar
     LaunchedEffect(Unit) {
         viewModel.loadAppointments()
     }
 
-    // Reset cancel success después de mostrar
     LaunchedEffect(cancelSuccess) {
         if (cancelSuccess) {
             viewModel.resetCancelSuccess()
@@ -114,26 +109,23 @@ fun AppointmentsScreen(
     Box(modifier = Modifier.fillMaxSize()) {
         if (isLoading && upcoming.isEmpty() && past.isEmpty()) {
             Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
+                modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator(color = Gold)
             }
         } else {
             Column(modifier = Modifier.fillMaxSize()) {
-                // Tab Row
                 TabRow(
                     selectedTabIndex = selectedTab,
                     containerColor = DarkGray,
                     contentColor = Gold,
                     indicator = { tabPositions ->
-                        TabRowDefaults.Indicator(
+                        TabRowDefaults.SecondaryIndicator(
                             modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
                             height = 3.dp,
                             color = Gold
                         )
-                    }
-                ) {
+                    }) {
                     tabs.forEachIndexed { index, title ->
                         Tab(
                             selected = selectedTab == index,
@@ -144,12 +136,10 @@ fun AppointmentsScreen(
                                     fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal,
                                     color = if (selectedTab == index) Gold else TextGray
                                 )
-                            }
-                        )
+                            })
                     }
                 }
 
-                // Error message
                 if (errorMessage != null) {
                     Box(
                         modifier = Modifier
@@ -165,25 +155,21 @@ fun AppointmentsScreen(
                     }
                 }
 
-                // Tab content
                 when (selectedTab) {
                     0 -> UpcomingTab(
-                        appointments = upcoming,
-                        onCancelClick = { appointment ->
+                        appointments = upcoming, onCancelClick = { appointment ->
                             appointmentToCancel = appointment
                             showCancelDialog = true
-                        },
-                        onNavigateToBooking = onNavigateToBooking
+                        }, onNavigateToBooking = onNavigateToBooking
                     )
+
                     1 -> HistoryTab(
-                        appointments = past,
-                        onNavigateToBooking = onNavigateToBooking
+                        appointments = past, onNavigateToBooking = onNavigateToBooking
                     )
                 }
             }
         }
 
-        // FAB
         FloatingActionButton(
             onClick = onNavigateToBooking,
             modifier = Modifier
@@ -193,12 +179,10 @@ fun AppointmentsScreen(
             contentColor = CarbonBlack
         ) {
             Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = "Reservar cita"
+                imageVector = Icons.Default.Add, contentDescription = "Reservar cita"
             )
         }
 
-        // Cancel confirmation dialog
         if (showCancelDialog && appointmentToCancel != null) {
             AlertDialog(
                 onDismissRequest = {
@@ -210,8 +194,7 @@ fun AppointmentsScreen(
                 textContentColor = TextGray,
                 title = {
                     Text(
-                        text = "Cancelar cita",
-                        fontWeight = FontWeight.Bold
+                        text = "Cancelar cita", fontWeight = FontWeight.Bold
                     )
                 },
                 text = {
@@ -225,12 +208,9 @@ fun AppointmentsScreen(
                             }
                             showCancelDialog = false
                             appointmentToCancel = null
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = RedCancel,
-                            contentColor = White
-                        ),
-                        shape = RoundedCornerShape(8.dp)
+                        }, colors = ButtonDefaults.buttonColors(
+                            containerColor = RedCancel, contentColor = White
+                        ), shape = RoundedCornerShape(8.dp)
                     ) {
                         Text("Sí, cancelar")
                     }
@@ -240,12 +220,10 @@ fun AppointmentsScreen(
                         onClick = {
                             showCancelDialog = false
                             appointmentToCancel = null
-                        }
-                    ) {
+                        }) {
                         Text("No, volver", color = Gold)
                     }
-                }
-            )
+                })
         }
     }
 }
@@ -272,9 +250,7 @@ private fun UpcomingTab(
         ) {
             items(appointments, key = { it.id }) { appointment ->
                 UpcomingAppointmentCard(
-                    appointment = appointment,
-                    onCancelClick = { onCancelClick(appointment) }
-                )
+                    appointment = appointment, onCancelClick = { onCancelClick(appointment) })
             }
             item {
                 Spacer(modifier = Modifier.height(72.dp))
@@ -285,8 +261,7 @@ private fun UpcomingTab(
 
 @Composable
 private fun HistoryTab(
-    appointments: List<AppointmentViewModel.AppointmentItem>,
-    onNavigateToBooking: () -> Unit
+    appointments: List<AppointmentViewModel.AppointmentItem>, onNavigateToBooking: () -> Unit
 ) {
     if (appointments.isEmpty()) {
         EmptyState(
@@ -314,8 +289,7 @@ private fun HistoryTab(
 
 @Composable
 private fun UpcomingAppointmentCard(
-    appointment: AppointmentViewModel.AppointmentItem,
-    onCancelClick: () -> Unit
+    appointment: AppointmentViewModel.AppointmentItem, onCancelClick: () -> Unit
 ) {
     val statusColor = when (appointment.status) {
         BookingStatus.PENDING -> AmberYellow
@@ -344,7 +318,6 @@ private fun UpcomingAppointmentCard(
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            // Status icon
             Box(
                 modifier = Modifier
                     .size(48.dp)
@@ -362,9 +335,7 @@ private fun UpcomingAppointmentCard(
 
             Spacer(modifier = Modifier.width(14.dp))
 
-            // Content
             Column(modifier = Modifier.weight(1f)) {
-                // Service name
                 Text(
                     text = appointment.serviceName,
                     style = MaterialTheme.typography.titleMedium,
@@ -374,14 +345,12 @@ private fun UpcomingAppointmentCard(
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-                // Date
                 Text(
                     text = appointment.dateFormatted,
                     style = MaterialTheme.typography.bodyMedium,
                     color = GoldLight
                 )
 
-                // Time
                 Text(
                     text = appointment.time,
                     style = MaterialTheme.typography.bodyMedium,
@@ -391,7 +360,6 @@ private fun UpcomingAppointmentCard(
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // Stylist
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Default.Person,
@@ -409,16 +377,13 @@ private fun UpcomingAppointmentCard(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Status chip + duration/price
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Status chip
                     StatusChip(label = statusLabel, color = statusColor)
 
-                    // Duration + Price
                     Text(
                         text = "${appointment.duration} min · ${appointment.price.toInt()}€",
                         style = MaterialTheme.typography.bodySmall,
@@ -428,15 +393,12 @@ private fun UpcomingAppointmentCard(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Cancel button (solo para pendientes/confirmadas)
-                if (appointment.status == BookingStatus.PENDING ||
-                    appointment.status == BookingStatus.CONFIRMED) {
+                if (appointment.status == BookingStatus.PENDING || appointment.status == BookingStatus.CONFIRMED) {
                     Button(
                         onClick = onCancelClick,
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = RedCancel.copy(alpha = 0.12f),
-                            contentColor = RedCancel
+                            containerColor = RedCancel.copy(alpha = 0.12f), contentColor = RedCancel
                         ),
                         shape = RoundedCornerShape(10.dp),
                         elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
@@ -448,8 +410,7 @@ private fun UpcomingAppointmentCard(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "Cancelar Cita",
-                            fontWeight = FontWeight.Medium
+                            text = "Cancelar Cita", fontWeight = FontWeight.Medium
                         )
                     }
                 }
@@ -487,7 +448,6 @@ private fun HistoryAppointmentCard(appointment: AppointmentViewModel.Appointment
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            // Status icon
             Box(
                 modifier = Modifier
                     .size(48.dp)
@@ -505,9 +465,7 @@ private fun HistoryAppointmentCard(appointment: AppointmentViewModel.Appointment
 
             Spacer(modifier = Modifier.width(14.dp))
 
-            // Content
             Column(modifier = Modifier.weight(1f)) {
-                // Service name
                 Text(
                     text = appointment.serviceName,
                     style = MaterialTheme.typography.titleMedium,
@@ -517,14 +475,12 @@ private fun HistoryAppointmentCard(appointment: AppointmentViewModel.Appointment
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-                // Date
                 Text(
                     text = appointment.dateFormatted,
                     style = MaterialTheme.typography.bodyMedium,
                     color = GoldLight
                 )
 
-                // Time
                 Text(
                     text = appointment.time,
                     style = MaterialTheme.typography.bodyMedium,
@@ -534,7 +490,6 @@ private fun HistoryAppointmentCard(appointment: AppointmentViewModel.Appointment
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // Stylist
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Default.Person,
@@ -552,17 +507,14 @@ private fun HistoryAppointmentCard(appointment: AppointmentViewModel.Appointment
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Status chip + XP / price
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Status chip
                     StatusChip(label = statusLabel, color = statusColor)
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        // XP earned (only for completed)
                         if (appointment.status == BookingStatus.COMPLETED && appointment.xpEarned > 0) {
                             Icon(
                                 imageVector = Icons.Default.Star,
@@ -612,10 +564,7 @@ private fun StatusChip(label: String, color: Color) {
 
 @Composable
 private fun EmptyState(
-    icon: ImageVector,
-    message: String,
-    showBookButton: Boolean,
-    onBookClick: () -> Unit
+    icon: ImageVector, message: String, showBookButton: Boolean, onBookClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -634,25 +583,19 @@ private fun EmptyState(
         Spacer(modifier = Modifier.height(20.dp))
 
         Text(
-            text = message,
-            style = MaterialTheme.typography.bodyLarge,
-            color = TextGray
+            text = message, style = MaterialTheme.typography.bodyLarge, color = TextGray
         )
 
         if (showBookButton) {
             Spacer(modifier = Modifier.height(24.dp))
 
             Button(
-                onClick = onBookClick,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Gold,
-                    contentColor = CarbonBlack
-                ),
-                shape = RoundedCornerShape(12.dp)
+                onClick = onBookClick, colors = ButtonDefaults.buttonColors(
+                    containerColor = Gold, contentColor = CarbonBlack
+                ), shape = RoundedCornerShape(12.dp)
             ) {
                 Text(
-                    text = "Reservar Cita",
-                    fontWeight = FontWeight.Bold
+                    text = "Reservar Cita", fontWeight = FontWeight.Bold
                 )
             }
         }

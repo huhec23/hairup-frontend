@@ -18,11 +18,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Loyalty
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Policy
@@ -72,10 +72,8 @@ import com.example.hairup.ui.components.AppTextInput
 import com.example.hairup.ui.viewmodel.ProfileViewModel
 import com.example.hairup.ui.viewmodel.ProfileViewModelFactory
 
-// Theme colors
 private val CarbonBlack = Color(0xFF121212)
 private val DarkGray = Color(0xFF1E1E1E)
-private val CardBg = Color(0xFF1A1A1A)
 private val Gold = Color(0xFFD4AF37)
 private val GoldLight = Color(0xFFE2C478)
 private val GoldDark = Color(0xFFA68829)
@@ -83,12 +81,10 @@ private val LeatherBrown = Color(0xFF8B5E3C)
 private val TextGray = Color(0xFFB0B0B0)
 private val White = Color(0xFFFFFFFF)
 private val RedLogout = Color(0xFFE53935)
-private val GreenSuccess = Color(0xFF4CAF50)
 
 @Composable
 fun ProfileScreen(
-    onLogout: () -> Unit = {},
-    onProfileUpdated: () -> Unit = {}
+    onLogout: () -> Unit = {}, onProfileUpdated: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val sessionManager = remember { SessionManager(context) }
@@ -106,26 +102,21 @@ fun ProfileScreen(
     }
 
 
-    // Estados locales
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var initialName by remember { mutableStateOf("") }
     var initialPhone by remember { mutableStateOf("") }
 
-    // Preferences state (mock por ahora)
     var notifAppointments by remember { mutableStateOf(true) }
     var notifOffers by remember { mutableStateOf(true) }
     var notifReminders by remember { mutableStateOf(true) }
 
-    // Dialog states
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showPasswordDialog by remember { mutableStateOf(false) }
 
-    // Snackbar
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Cargar datos del perfil
     LaunchedEffect(profileState) {
         when (profileState) {
             is ProfileViewModel.ProfileState.Success -> {
@@ -136,31 +127,33 @@ fun ProfileScreen(
                 initialName = state.user.name
                 initialPhone = state.user.phone
             }
+
             is ProfileViewModel.ProfileState.Error -> {
                 val state = profileState as ProfileViewModel.ProfileState.Error
                 snackbarHostState.showSnackbar(state.message)
             }
+
             else -> {}
         }
     }
 
-    // Mostrar resultados de actualización
     LaunchedEffect(updateState) {
         when (updateState) {
             is ProfileViewModel.UpdateState.Success -> {
                 snackbarHostState.showSnackbar("Perfil actualizado correctamente")
                 viewModel.resetUpdateState()
             }
+
             is ProfileViewModel.UpdateState.Error -> {
                 val state = updateState as ProfileViewModel.UpdateState.Error
                 snackbarHostState.showSnackbar(state.message)
                 viewModel.resetUpdateState()
             }
+
             else -> {}
         }
     }
 
-    // Mostrar resultados de cambio de contraseña
     LaunchedEffect(passwordState) {
         when (passwordState) {
             is ProfileViewModel.PasswordState.Success -> {
@@ -168,11 +161,13 @@ fun ProfileScreen(
                 viewModel.resetPasswordState()
                 showPasswordDialog = false
             }
+
             is ProfileViewModel.PasswordState.Error -> {
                 val state = passwordState as ProfileViewModel.PasswordState.Error
                 snackbarHostState.showSnackbar(state.message)
                 viewModel.resetPasswordState()
             }
+
             else -> {}
         }
     }
@@ -191,8 +186,7 @@ fun ProfileScreen(
         when (val state = profileState) {
             is ProfileViewModel.ProfileState.Loading -> {
                 Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+                    modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(color = Gold)
                 }
@@ -201,12 +195,10 @@ fun ProfileScreen(
             is ProfileViewModel.ProfileState.Success -> {
                 val user = state.user
 
-                // ===== A) Profile Header =====
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    // Avatar
                     Box(
                         modifier = Modifier
                             .size(80.dp)
@@ -215,8 +207,7 @@ fun ProfileScreen(
                                 Brush.linearGradient(
                                     colors = listOf(GoldDark, Gold, GoldLight)
                                 )
-                            ),
-                        contentAlignment = Alignment.Center
+                            ), contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = user.name.firstOrNull()?.toString() ?: "U",
@@ -228,7 +219,6 @@ fun ProfileScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // Name + Level badge
                     Row(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -239,7 +229,6 @@ fun ProfileScreen(
                             color = White
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        // Level badge
                         Row(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(12.dp))
@@ -274,7 +263,6 @@ fun ProfileScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // ===== B) Quick Stats Card =====
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = DarkGray),
@@ -300,9 +288,7 @@ fun ProfileScreen(
                                 .background(LeatherBrown.copy(alpha = 0.3f))
                         )
                         StatItem(
-                            icon = Icons.Default.Star,
-                            value = "${user.xp}",
-                            label = "XP"
+                            icon = Icons.Default.Star, value = "${user.xp}", label = "XP"
                         )
                         Box(
                             modifier = Modifier
@@ -311,33 +297,25 @@ fun ProfileScreen(
                                 .background(LeatherBrown.copy(alpha = 0.3f))
                         )
                         StatItem(
-                            icon = Icons.Default.Loyalty,
-                            value = "${user.points}",
-                            label = "Pts"
+                            icon = Icons.Default.Loyalty, value = "${user.points}", label = "Pts"
                         )
                     }
                 }
 
                 Spacer(modifier = Modifier.height(28.dp))
 
-                // ===== C) Personal Information =====
                 SectionHeader(icon = Icons.Default.Person, title = "Información Personal")
 
                 Spacer(modifier = Modifier.height(14.dp))
 
                 AppTextInput(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = "Nombre Completo"
+                    value = name, onValueChange = { name = it }, label = "Nombre Completo"
                 )
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Email - read-only
                 AppTextInput(
-                    value = email,
-                    onValueChange = {},
-                    label = "Email"
+                    value = email, onValueChange = {}, label = "Email"
                 )
                 Text(
                     text = "El email no se puede modificar",
@@ -349,14 +327,11 @@ fun ProfileScreen(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 AppTextInput(
-                    value = phone,
-                    onValueChange = { phone = it },
-                    label = "Teléfono"
+                    value = phone, onValueChange = { phone = it }, label = "Teléfono"
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Save button con estado de carga
                 when (updateState) {
                     is ProfileViewModel.UpdateState.Loading -> {
                         Button(
@@ -372,13 +347,13 @@ fun ProfileScreen(
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             CircularProgressIndicator(
-                                color = Gold,
-                                modifier = Modifier.size(20.dp)
+                                color = Gold, modifier = Modifier.size(20.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text("GUARDANDO...")
                         }
                     }
+
                     else -> {
                         Button(
                             onClick = { viewModel.updateProfile(name, email, phone) },
@@ -395,8 +370,7 @@ fun ProfileScreen(
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             Text(
-                                text = "Guardar Cambios",
-                                fontWeight = FontWeight.Bold
+                                text = "Guardar Cambios", fontWeight = FontWeight.Bold
                             )
                         }
                     }
@@ -406,7 +380,6 @@ fun ProfileScreen(
                 SectionDivider()
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // ===== D) Preferences =====
                 SectionHeader(icon = Icons.Default.Settings, title = "Preferencias")
 
                 Spacer(modifier = Modifier.height(14.dp))
@@ -414,24 +387,20 @@ fun ProfileScreen(
                 PreferenceSwitch(
                     label = "Notificaciones de citas",
                     checked = notifAppointments,
-                    onCheckedChange = { notifAppointments = it }
-                )
+                    onCheckedChange = { notifAppointments = it })
                 PreferenceSwitch(
                     label = "Notificaciones de ofertas",
                     checked = notifOffers,
-                    onCheckedChange = { notifOffers = it }
-                )
+                    onCheckedChange = { notifOffers = it })
                 PreferenceSwitch(
                     label = "Recordatorios",
                     checked = notifReminders,
-                    onCheckedChange = { notifReminders = it }
-                )
+                    onCheckedChange = { notifReminders = it })
 
                 Spacer(modifier = Modifier.height(12.dp))
                 SectionDivider()
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // ===== E) Account =====
                 SectionHeader(icon = Icons.Default.Security, title = "Cuenta")
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -439,46 +408,42 @@ fun ProfileScreen(
                 AccountRow(
                     icon = Icons.Default.Lock,
                     label = "Cambiar contraseña",
-                    onClick = { showPasswordDialog = true }
-                )
+                    onClick = { showPasswordDialog = true })
                 AccountRow(
                     icon = Icons.Default.Policy,
                     label = "Política de privacidad",
-                    onClick = { /* Navigate */ }
-                )
+                    onClick = { /* Navigate */ })
                 AccountRow(
                     icon = Icons.Default.Description,
                     label = "Términos y condiciones",
-                    onClick = { /* Navigate */ }
-                )
+                    onClick = { /* Navigate */ })
 
                 Spacer(modifier = Modifier.height(20.dp))
                 SectionDivider()
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // ===== F) Logout Button =====
                 OutlinedButton(
                     onClick = { showLogoutDialog = true },
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = RedLogout),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, RedLogout.copy(alpha = 0.5f)),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp, RedLogout.copy(alpha = 0.5f)
+                    ),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Logout,
+                        imageVector = Icons.AutoMirrored.Filled.Logout,
                         contentDescription = null,
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Cerrar Sesión",
-                        fontWeight = FontWeight.Medium
+                        text = "Cerrar Sesión", fontWeight = FontWeight.Medium
                     )
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // ===== G) App Version =====
                 Text(
                     text = "HairUp v1.0.0",
                     style = MaterialTheme.typography.bodySmall,
@@ -495,22 +460,16 @@ fun ProfileScreen(
                     verticalArrangement = Arrangement.Center
                 ) {
                     Text(
-                        text = "Error al cargar perfil",
-                        color = TextGray,
-                        fontSize = 16.sp
+                        text = "Error al cargar perfil", color = TextGray, fontSize = 16.sp
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = state.message,
-                        color = RedLogout,
-                        fontSize = 14.sp
+                        text = state.message, color = RedLogout, fontSize = 14.sp
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
-                        onClick = { viewModel.loadProfile() },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Gold,
-                            contentColor = CarbonBlack
+                        onClick = { viewModel.loadProfile() }, colors = ButtonDefaults.buttonColors(
+                            containerColor = Gold, contentColor = CarbonBlack
                         )
                     ) {
                         Text("Reintentar")
@@ -522,21 +481,15 @@ fun ProfileScreen(
         Spacer(modifier = Modifier.height(16.dp))
     }
 
-    // Snackbar
     SnackbarHost(
-        hostState = snackbarHostState,
-        modifier = Modifier.padding(16.dp)
+        hostState = snackbarHostState, modifier = Modifier.padding(16.dp)
     ) { data ->
         Snackbar(
-            containerColor = DarkGray,
-            contentColor = White,
-            snackbarData = data
+            containerColor = DarkGray, contentColor = White, snackbarData = data
         )
     }
 
-    // ===== Dialogs =====
 
-    // Logout confirmation
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
@@ -545,8 +498,7 @@ fun ProfileScreen(
             textContentColor = TextGray,
             title = {
                 Text(
-                    text = "Cerrar sesión",
-                    fontWeight = FontWeight.Bold
+                    text = "Cerrar sesión", fontWeight = FontWeight.Bold
                 )
             },
             text = {
@@ -557,12 +509,9 @@ fun ProfileScreen(
                     onClick = {
                         showLogoutDialog = false
                         onLogout()
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = RedLogout,
-                        contentColor = White
-                    ),
-                    shape = RoundedCornerShape(8.dp)
+                    }, colors = ButtonDefaults.buttonColors(
+                        containerColor = RedLogout, contentColor = White
+                    ), shape = RoundedCornerShape(8.dp)
                 ) {
                     Text("Cerrar Sesión")
                 }
@@ -571,18 +520,14 @@ fun ProfileScreen(
                 TextButton(onClick = { showLogoutDialog = false }) {
                     Text("Cancelar", color = Gold)
                 }
-            }
-        )
+            })
     }
 
-    // Change password dialog
     if (showPasswordDialog) {
         ChangePasswordDialog(
-            onDismiss = { showPasswordDialog = false },
-            onSave = { current, new ->
-                viewModel.changePassword(current, new)
-            },
-            passwordState = passwordState
+            onDismiss = { showPasswordDialog = false }, onSave = { current, new ->
+            viewModel.changePassword(current, new)
+        }, passwordState = passwordState
         )
     }
 }
@@ -599,117 +544,109 @@ private fun ChangePasswordDialog(
     var localError by remember { mutableStateOf("") }
 
     val isLoading = passwordState is ProfileViewModel.PasswordState.Loading
-    val errorMessage = if (passwordState is ProfileViewModel.PasswordState.Error) passwordState.message else null
+    val errorMessage =
+        if (passwordState is ProfileViewModel.PasswordState.Error) passwordState.message else null
 
-    AlertDialog(
-        onDismissRequest = {
-            if (!isLoading) {
-                onDismiss()
-            }
-        },
-        containerColor = DarkGray,
-        titleContentColor = White,
-        title = {
-            Text(
-                text = "Cambiar contraseña",
-                fontWeight = FontWeight.Bold
+    AlertDialog(onDismissRequest = {
+        if (!isLoading) {
+            onDismiss()
+        }
+    }, containerColor = DarkGray, titleContentColor = White, title = {
+        Text(
+            text = "Cambiar contraseña", fontWeight = FontWeight.Bold
+        )
+    }, text = {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            AppTextInput(
+                value = currentPassword,
+                onValueChange = {
+                    currentPassword = it
+                    localError = ""
+                },
+                label = "Contraseña actual",
+                visualTransformation = PasswordVisualTransformation()
             )
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                AppTextInput(
-                    value = currentPassword,
-                    onValueChange = {
-                        currentPassword = it
-                        localError = ""
-                    },
-                    label = "Contraseña actual",
-                    visualTransformation = PasswordVisualTransformation()
-                )
-                AppTextInput(
-                    value = newPassword,
-                    onValueChange = {
-                        newPassword = it
-                        localError = ""
-                    },
-                    label = "Nueva contraseña",
-                    visualTransformation = PasswordVisualTransformation()
-                )
-                AppTextInput(
-                    value = confirmPassword,
-                    onValueChange = {
-                        confirmPassword = it
-                        localError = ""
-                    },
-                    label = "Confirmar contraseña",
-                    visualTransformation = PasswordVisualTransformation()
-                )
+            AppTextInput(
+                value = newPassword, onValueChange = {
+                    newPassword = it
+                    localError = ""
+                }, label = "Nueva contraseña", visualTransformation = PasswordVisualTransformation()
+            )
+            AppTextInput(
+                value = confirmPassword,
+                onValueChange = {
+                    confirmPassword = it
+                    localError = ""
+                },
+                label = "Confirmar contraseña",
+                visualTransformation = PasswordVisualTransformation()
+            )
 
-                if (localError.isNotEmpty()) {
-                    Text(
-                        text = localError,
-                        color = RedLogout,
-                        fontSize = 12.sp
-                    )
-                }
+            if (localError.isNotEmpty()) {
+                Text(
+                    text = localError, color = RedLogout, fontSize = 12.sp
+                )
+            }
 
-                if (errorMessage != null) {
-                    Text(
-                        text = errorMessage,
-                        color = RedLogout,
-                        fontSize = 12.sp
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            if (isLoading) {
-                Box(
-                    modifier = Modifier.padding(16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(
-                        color = Gold,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-            } else {
-                Button(
-                    onClick = {
-                        when {
-                            currentPassword.isBlank() -> localError = "Ingresa la contraseña actual"
-                            newPassword.isBlank() -> localError = "Ingresa la nueva contraseña"
-                            newPassword.length < 6 -> localError = "Mínimo 6 caracteres"
-                            newPassword != confirmPassword -> localError = "Las contraseñas no coinciden"
-                            else -> onSave(currentPassword, newPassword)
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Gold,
-                        contentColor = CarbonBlack
-                    ),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text("Guardar")
-                }
-            }
-        },
-        dismissButton = {
-            if (!isLoading) {
-                TextButton(onClick = onDismiss) {
-                    Text("Cancelar", color = Gold)
-                }
+            if (errorMessage != null) {
+                Text(
+                    text = errorMessage, color = RedLogout, fontSize = 12.sp
+                )
             }
         }
-    )
+    }, confirmButton = {
+        if (isLoading) {
+            Box(
+                modifier = Modifier.padding(16.dp), contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    color = Gold, modifier = Modifier.size(24.dp)
+                )
+            }
+        } else {
+            Button(
+                onClick = {
+                    when {
+                        currentPassword.isBlank() -> localError = "Ingresa la contraseña actual"
+                        newPassword.isBlank() -> localError = "Ingresa la nueva contraseña"
+                        newPassword.length < 6 -> localError = "Mínimo 6 caracteres"
+                        newPassword != confirmPassword -> localError =
+                            "Las contraseñas no coinciden"
+
+                        else -> onSave(currentPassword, newPassword)
+                    }
+                }, colors = ButtonDefaults.buttonColors(
+                    containerColor = Gold, contentColor = CarbonBlack
+                ), shape = RoundedCornerShape(8.dp)
+            ) {
+                Text("Guardar")
+            }
+        }
+    }, dismissButton = {
+        if (!isLoading) {
+            TextButton(onClick = onDismiss) {
+                Text("Cancelar", color = Gold)
+            }
+        }
+    })
 }
 
 @Composable
 private fun StatItem(icon: ImageVector, value: String, label: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Icon(imageVector = icon, contentDescription = null, tint = Gold, modifier = Modifier.size(22.dp))
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = Gold,
+            modifier = Modifier.size(22.dp)
+        )
         Spacer(modifier = Modifier.height(4.dp))
-        Text(text = value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = White)
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = White
+        )
         Text(text = label, style = MaterialTheme.typography.bodySmall, color = TextGray)
     }
 }
@@ -717,9 +654,19 @@ private fun StatItem(icon: ImageVector, value: String, label: String) {
 @Composable
 private fun SectionHeader(icon: ImageVector, title: String) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(imageVector = icon, contentDescription = null, tint = Gold, modifier = Modifier.size(22.dp))
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = Gold,
+            modifier = Modifier.size(22.dp)
+        )
         Spacer(modifier = Modifier.width(8.dp))
-        Text(text = title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Gold)
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = Gold
+        )
     }
 }
 
@@ -737,11 +684,13 @@ private fun PreferenceSwitch(label: String, checked: Boolean, onCheckedChange: (
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text = label, style = MaterialTheme.typography.bodyLarge, color = White.copy(alpha = 0.9f))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            color = White.copy(alpha = 0.9f)
+        )
         Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-            colors = SwitchDefaults.colors(
+            checked = checked, onCheckedChange = onCheckedChange, colors = SwitchDefaults.colors(
                 checkedThumbColor = Gold,
                 checkedTrackColor = Gold.copy(alpha = 0.3f),
                 uncheckedThumbColor = TextGray,
@@ -753,17 +702,30 @@ private fun PreferenceSwitch(label: String, checked: Boolean, onCheckedChange: (
 
 @Composable
 private fun AccountRow(icon: ImageVector, label: String, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
-            .clickable { onClick() }
-            .padding(horizontal = 4.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(imageVector = icon, contentDescription = null, tint = TextGray, modifier = Modifier.size(22.dp))
+    Row(modifier = Modifier
+        .fillMaxWidth()
+        .clip(RoundedCornerShape(10.dp))
+        .clickable { onClick() }
+        .padding(horizontal = 4.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = TextGray,
+            modifier = Modifier.size(22.dp)
+        )
         Spacer(modifier = Modifier.width(12.dp))
-        Text(text = label, style = MaterialTheme.typography.bodyLarge, color = White.copy(alpha = 0.9f), modifier = Modifier.weight(1f))
-        Icon(imageVector = Icons.Default.KeyboardArrowRight, contentDescription = null, tint = TextGray.copy(alpha = 0.6f), modifier = Modifier.size(22.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            color = White.copy(alpha = 0.9f),
+            modifier = Modifier.weight(1f)
+        )
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = TextGray.copy(alpha = 0.6f),
+            modifier = Modifier.size(22.dp)
+        )
     }
 }

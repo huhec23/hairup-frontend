@@ -3,7 +3,7 @@ package com.example.hairup.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.hairup.data.SessionManager
-import com.example.hairup.data.repository.AppointmentRepository  // Añade esto
+import com.example.hairup.data.repository.AppointmentRepository
 import com.example.hairup.data.repository.ProfileRepository
 import com.example.hairup.model.User
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 class ProfileViewModel(
     private val sessionManager: SessionManager,
     private val profileRepository: ProfileRepository = ProfileRepository(),
-    private val appointmentRepository: AppointmentRepository = AppointmentRepository()  // Añade esto
+    private val appointmentRepository: AppointmentRepository = AppointmentRepository()
 ) : ViewModel() {
 
     private val _profileState = MutableStateFlow<ProfileState>(ProfileState.Loading)
@@ -25,8 +25,8 @@ class ProfileViewModel(
     private val _passwordState = MutableStateFlow<PasswordState>(PasswordState.Idle)
     val passwordState: StateFlow<PasswordState> = _passwordState
 
-    private val _appointmentsCount = MutableStateFlow(0)  // Nuevo
-    val appointmentsCount: StateFlow<Int> = _appointmentsCount  // Nuevo
+    private val _appointmentsCount = MutableStateFlow(0)
+    val appointmentsCount: StateFlow<Int> = _appointmentsCount
 
     private var currentUser: User? = null
 
@@ -43,16 +43,18 @@ class ProfileViewModel(
 
         _profileState.value = ProfileState.Loading
 
-        // Cargar perfil y citas en paralelo
         var profileLoaded = false
         var appointmentsLoaded = false
         var profileResult: Result<User>? = null
-        var appointmentsResult: Result<List<com.example.hairup.api.models.AppointmentResponse>>? = null
+        var appointmentsResult: Result<List<com.example.hairup.api.models.AppointmentResponse>>? =
+            null
 
         fun tryCombineResults() {
             if (profileLoaded && appointmentsLoaded) {
                 if (profileResult?.isFailure == true) {
-                    _profileState.value = ProfileState.Error(profileResult!!.exceptionOrNull()?.message ?: "Error al cargar perfil")
+                    _profileState.value = ProfileState.Error(
+                        profileResult!!.exceptionOrNull()?.message ?: "Error al cargar perfil"
+                    )
                     return
                 }
 
@@ -69,7 +71,6 @@ class ProfileViewModel(
             }
         }
 
-        // Cargar perfil
         profileRepository.getProfile(token) { result ->
             viewModelScope.launch {
                 profileResult = result
@@ -78,7 +79,6 @@ class ProfileViewModel(
             }
         }
 
-        // Cargar citas para contar
         appointmentRepository.getUserAppointments(token) { result ->
             viewModelScope.launch {
                 appointmentsResult = result
@@ -114,20 +114,14 @@ class ProfileViewModel(
         }
     }
 
-    // Nuevo método para recargar solo el contador de citas
     private fun loadAppointmentsCount() {
         val token = sessionManager.getToken() ?: return
 
         appointmentRepository.getUserAppointments(token) { result ->
             viewModelScope.launch {
-                result.fold(
-                    onSuccess = { appointments ->
-                        _appointmentsCount.value = appointments.size
-                    },
-                    onFailure = {
-                        // Silently fail, no mostramos error
-                    }
-                )
+                result.fold(onSuccess = { appointments ->
+                    _appointmentsCount.value = appointments.size
+                }, onFailure = {})
             }
         }
     }

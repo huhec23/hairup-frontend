@@ -2,11 +2,13 @@ package com.example.hairup.data
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import com.example.hairup.model.User
 
 class SessionManager(context: Context) {
 
-    private val prefs: SharedPreferences = context.getSharedPreferences("hairup_session", Context.MODE_PRIVATE)
+    private val prefs: SharedPreferences =
+        context.getSharedPreferences("hairup_session", Context.MODE_PRIVATE)
 
     companion object {
         private const val KEY_TOKEN = "token"
@@ -59,6 +61,6 @@ class SessionManager(context: Context) {
     }
 
     fun logout() {
-        prefs.edit().clear().apply()
+        prefs.edit { clear() }
     }
 }

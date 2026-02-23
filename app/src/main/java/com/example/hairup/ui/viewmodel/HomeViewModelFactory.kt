@@ -8,8 +8,7 @@ class HomeViewModelFactory(private val sessionManager: SessionManager) : ViewMod
 
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(HomeViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return HomeViewModel(sessionManager) as T
+            @Suppress("UNCHECKED_CAST") return HomeViewModel(sessionManager) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

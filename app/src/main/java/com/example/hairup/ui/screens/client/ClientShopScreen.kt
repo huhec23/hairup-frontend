@@ -20,7 +20,6 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -49,13 +48,13 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -82,17 +81,14 @@ import com.example.hairup.ui.viewmodel.ShopViewModel
 import com.example.hairup.ui.viewmodel.ShopViewModelFactory
 import kotlinx.coroutines.launch
 
-// Theme colors
 private val CarbonBlack = Color(0xFF121212)
 private val DarkGray = Color(0xFF1E1E1E)
 private val CardBg = Color(0xFF1A1A1A)
 private val Gold = Color(0xFFD4AF37)
 private val GoldLight = Color(0xFFE2C478)
-private val GoldDark = Color(0xFFA68829)
 private val LeatherBrown = Color(0xFF8B5E3C)
 private val TextGray = Color(0xFFB0B0B0)
 private val White = Color(0xFFFFFFFF)
-private val GreenSuccess = Color(0xFF4CAF50)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -110,34 +106,34 @@ fun ShopScreen() {
     val isLoading by viewModel.isLoading.collectAsState()
 
     var searchQuery by remember { mutableStateOf("") }
-    var selectedCategoryId by remember { mutableStateOf(-1) } // -1 = "Todos"
+    var selectedCategoryId by remember { mutableIntStateOf(-1) } // -1 = "Todos"
     var showCart by remember { mutableStateOf(false) }
     var showPurchaseDialog by remember { mutableStateOf(false) }
 
-    // Cargar productos y categorías al iniciar
     LaunchedEffect(Unit) {
         viewModel.loadProducts()
         viewModel.loadCategories()
     }
 
-    // Mostrar resultado de compra
     LaunchedEffect(purchaseResult) {
         if (purchaseResult != null) {
             showPurchaseDialog = true
         }
     }
 
-    // Filtrar productos por categoría y búsqueda
     val filteredProducts = when (val state = shopState) {
         is ShopViewModel.ShopState.Success -> {
             state.products.filter { product ->
-                val matchesCategory = selectedCategoryId == -1 || product.categoryId == selectedCategoryId
-                val matchesSearch = searchQuery.isBlank() ||
-                        product.name.contains(searchQuery, ignoreCase = true) ||
-                        product.description.contains(searchQuery, ignoreCase = true)
+                val matchesCategory =
+                    selectedCategoryId == -1 || product.categoryId == selectedCategoryId
+                val matchesSearch = searchQuery.isBlank() || product.name.contains(
+                    searchQuery,
+                    ignoreCase = true
+                ) || product.description.contains(searchQuery, ignoreCase = true)
                 matchesCategory && matchesSearch
             }
         }
+
         else -> emptyList()
     }
 
@@ -156,7 +152,6 @@ fun ShopScreen() {
                 .fillMaxSize()
                 .background(CarbonBlack)
         ) {
-            // Top Bar
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -176,8 +171,7 @@ fun ShopScreen() {
                         badge = {
                             if (totalCartItems > 0) {
                                 Badge(
-                                    containerColor = Gold,
-                                    contentColor = CarbonBlack
+                                    containerColor = Gold, contentColor = CarbonBlack
                                 ) {
                                     Text(
                                         text = "$totalCartItems",
@@ -186,8 +180,7 @@ fun ShopScreen() {
                                     )
                                 }
                             }
-                        }
-                    ) {
+                        }) {
                         Icon(
                             imageVector = Icons.Default.ShoppingCart,
                             contentDescription = "Carrito",
@@ -198,7 +191,6 @@ fun ShopScreen() {
                 }
             }
 
-            // Search Bar
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
@@ -228,7 +220,6 @@ fun ShopScreen() {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Category Filters (reales desde backend)
             if (categories.isNotEmpty()) {
                 Row(
                     modifier = Modifier
@@ -246,8 +237,7 @@ fun ShopScreen() {
                                     if (isSelected) Gold else DarkGray
                                 )
                                 .clickable { selectedCategoryId = category.id }
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
-                        ) {
+                                .padding(horizontal = 16.dp, vertical = 8.dp)) {
                             Text(
                                 text = category.name,
                                 fontSize = 13.sp,
@@ -261,16 +251,15 @@ fun ShopScreen() {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Product Grid
             when (val state = shopState) {
                 is ShopViewModel.ShopState.Loading -> {
                     Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                        modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
                     ) {
                         CircularProgressIndicator(color = Gold)
                     }
                 }
+
                 is ShopViewModel.ShopState.Error -> {
                     Column(
                         modifier = Modifier
@@ -280,9 +269,7 @@ fun ShopScreen() {
                         verticalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = "Error al cargar productos",
-                            color = TextGray,
-                            fontSize = 16.sp
+                            text = "Error al cargar productos", color = TextGray, fontSize = 16.sp
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
@@ -295,17 +282,16 @@ fun ShopScreen() {
                         Button(
                             onClick = { viewModel.loadProducts() },
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Gold,
-                                contentColor = CarbonBlack
+                                containerColor = Gold, contentColor = CarbonBlack
                             )
                         ) {
                             Text("Reintentar")
                         }
                     }
                 }
+
                 is ShopViewModel.ShopState.Success -> {
                     if (filteredProducts.isEmpty()) {
-                        // Empty state
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -339,8 +325,7 @@ fun ShopScreen() {
                                     product = product,
                                     cartQuantity = getCartQuantity(product.id),
                                     onAdd = { viewModel.addToCart(product) },
-                                    onRemove = { viewModel.removeFromCart(product.id) }
-                                )
+                                    onRemove = { viewModel.removeFromCart(product.id) })
                             }
                         }
                     }
@@ -349,7 +334,6 @@ fun ShopScreen() {
         }
     }
 
-    // Cart Bottom Sheet
     if (showCart) {
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         val scope = rememberCoroutineScope()
@@ -379,94 +363,72 @@ fun ShopScreen() {
         }
     }
 
-    // Purchase result dialog
     if (showPurchaseDialog && purchaseResult != null) {
-        AlertDialog(
-            onDismissRequest = {
-                showPurchaseDialog = false
-                viewModel.resetPurchaseResult()
-            },
-            containerColor = DarkGray,
-            titleContentColor = White,
-            icon = {
-                if (purchaseResult!!.success) {
-                    Icon(
-                        Icons.Default.Star,
-                        null,
-                        tint = Gold,
-                        modifier = Modifier.size(40.dp)
-                    )
-                }
-            },
-            title = {
-                Text(
-                    text = if (purchaseResult!!.success) "¡Compra realizada!" else "Error",
-                    fontWeight = FontWeight.Bold,
-                    color = if (purchaseResult!!.success) Gold else Color(0xFFE53935)
+        AlertDialog(onDismissRequest = {
+            showPurchaseDialog = false
+            viewModel.resetPurchaseResult()
+        }, containerColor = DarkGray, titleContentColor = White, icon = {
+            if (purchaseResult!!.success) {
+                Icon(
+                    Icons.Default.Star, null, tint = Gold, modifier = Modifier.size(40.dp)
                 )
-            },
-            text = {
-                Column {
-                    if (purchaseResult!!.success) {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = "Has ganado:",
-                            fontWeight = FontWeight.Bold,
-                            color = White
+            }
+        }, title = {
+            Text(
+                text = if (purchaseResult!!.success) "¡Compra realizada!" else "Error",
+                fontWeight = FontWeight.Bold,
+                color = if (purchaseResult!!.success) Gold else Color(0xFFE53935)
+            )
+        }, text = {
+            Column {
+                if (purchaseResult!!.success) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "Has ganado:", fontWeight = FontWeight.Bold, color = White
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = null,
+                            tint = Gold,
+                            modifier = Modifier.size(16.dp)
                         )
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = null,
-                                tint = Gold,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "${purchaseResult!!.xpEarned} XP",
-                                color = Gold
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = null,
-                                tint = GoldLight,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "${purchaseResult!!.pointsEarned} puntos",
-                                color = GoldLight
-                            )
-                        }
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "${purchaseResult!!.xpEarned} XP", color = Gold
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = null,
+                            tint = GoldLight,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "${purchaseResult!!.pointsEarned} puntos", color = GoldLight
+                        )
                     }
                 }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showPurchaseDialog = false
-                        viewModel.resetPurchaseResult()
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Gold,
-                        contentColor = CarbonBlack
-                    ),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text("Aceptar")
-                }
             }
-        )
+        }, confirmButton = {
+            Button(
+                onClick = {
+                    showPurchaseDialog = false
+                    viewModel.resetPurchaseResult()
+                }, colors = ButtonDefaults.buttonColors(
+                    containerColor = Gold, contentColor = CarbonBlack
+                ), shape = RoundedCornerShape(8.dp)
+            ) {
+                Text("Aceptar")
+            }
+        })
     }
 }
 
 @Composable
 private fun ProductCard(
-    product: Product,
-    cartQuantity: Int,
-    onAdd: () -> Unit,
-    onRemove: () -> Unit
+    product: Product, cartQuantity: Int, onAdd: () -> Unit, onRemove: () -> Unit
 ) {
     val isAvailable = product.available
 
@@ -476,7 +438,6 @@ private fun ProductCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column {
-            // Product image area
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -486,10 +447,8 @@ private fun ProductCard(
             ) {
                 if (product.image.isNotEmpty() && !product.image.startsWith("product_")) {
                     AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(product.image)
-                            .crossfade(true)
-                            .build(),
+                        model = ImageRequest.Builder(LocalContext.current).data(product.image)
+                            .crossfade(true).build(),
                         contentDescription = product.name,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
@@ -498,7 +457,7 @@ private fun ProductCard(
                         alpha = if (isAvailable) 1f else 0.4f
                     )
                 } else {
-                    val imageRes = R.drawable.product_champu_reparador // Default
+                    val imageRes = R.drawable.product_champu_reparador
                     Image(
                         painter = painterResource(id = imageRes),
                         contentDescription = product.name,
@@ -574,8 +533,7 @@ private fun ProductCard(
                                 modifier = Modifier
                                     .size(28.dp)
                                     .clip(RoundedCornerShape(topStart = 8.dp, bottomStart = 8.dp))
-                                    .clickable { onRemove() },
-                                contentAlignment = Alignment.Center
+                                    .clickable { onRemove() }, contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Remove,
@@ -596,8 +554,7 @@ private fun ProductCard(
                                 modifier = Modifier
                                     .size(28.dp)
                                     .clip(RoundedCornerShape(topEnd = 8.dp, bottomEnd = 8.dp))
-                                    .clickable { onAdd() },
-                                contentAlignment = Alignment.Center
+                                    .clickable { onAdd() }, contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Add,
@@ -648,7 +605,6 @@ private fun CartContent(
             .padding(horizontal = 20.dp)
             .padding(bottom = 32.dp)
     ) {
-        // Header
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -672,7 +628,6 @@ private fun CartContent(
         Spacer(modifier = Modifier.height(8.dp))
 
         if (cartItems.isEmpty()) {
-            // Empty cart
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -693,7 +648,6 @@ private fun CartContent(
                 )
             }
         } else {
-            // Cart items
             Column(
                 modifier = Modifier
                     .weight(1f, fill = false)
@@ -705,8 +659,7 @@ private fun CartContent(
                         item = item,
                         onAdd = { onAdd(item.product) },
                         onRemove = { onRemove(item.product) },
-                        onDelete = { onDelete(item.product) }
-                    )
+                        onDelete = { onDelete(item.product) })
                 }
             }
 
@@ -714,16 +667,13 @@ private fun CartContent(
             Divider(color = LeatherBrown.copy(alpha = 0.3f))
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Total
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Total",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = TextGray
+                    text = "Total", style = MaterialTheme.typography.titleMedium, color = TextGray
                 )
                 Text(
                     text = formatPrice(total),
@@ -735,7 +685,6 @@ private fun CartContent(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Order button
             Button(
                 onClick = onOrder,
                 modifier = Modifier
@@ -752,8 +701,7 @@ private fun CartContent(
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(
-                        color = CarbonBlack,
-                        modifier = Modifier.size(20.dp)
+                        color = CarbonBlack, modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("PROCESANDO...")
@@ -765,9 +713,7 @@ private fun CartContent(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Realizar Pedido",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
+                        text = "Realizar Pedido", fontWeight = FontWeight.Bold, fontSize = 16.sp
                     )
                 }
             }
@@ -777,16 +723,12 @@ private fun CartContent(
 
 @Composable
 private fun CartItemRow(
-    item: ShopViewModel.CartItem,
-    onAdd: () -> Unit,
-    onRemove: () -> Unit,
-    onDelete: () -> Unit
+    item: ShopViewModel.CartItem, onAdd: () -> Unit, onRemove: () -> Unit, onDelete: () -> Unit
 ) {
     val subtotal = item.product.price * item.quantity
 
     Card(
-        colors = CardDefaults.cardColors(containerColor = CardBg),
-        shape = RoundedCornerShape(12.dp)
+        colors = CardDefaults.cardColors(containerColor = CardBg), shape = RoundedCornerShape(12.dp)
     ) {
         Row(
             modifier = Modifier
@@ -813,7 +755,6 @@ private fun CartItemRow(
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // Quantity controls
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
@@ -858,7 +799,6 @@ private fun CartItemRow(
 
             Spacer(modifier = Modifier.width(10.dp))
 
-            // Subtotal
             Text(
                 text = formatPrice(subtotal),
                 style = MaterialTheme.typography.bodyMedium,
@@ -868,10 +808,8 @@ private fun CartItemRow(
                 textAlign = TextAlign.End
             )
 
-            // Delete
             IconButton(
-                onClick = onDelete,
-                modifier = Modifier.size(32.dp)
+                onClick = onDelete, modifier = Modifier.size(32.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Delete,

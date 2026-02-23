@@ -32,14 +32,20 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,9 +54,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.hairup.data.SessionManager
+import com.example.hairup.model.AdminUser
+import com.example.hairup.ui.viewmodel.AdminUserViewModel
+import com.example.hairup.ui.viewmodel.AdminUserViewModelFactory
 
 private val CarbonBlack = Color(0xFF121212)
 private val DarkGray = Color(0xFF1E1E1E)
@@ -64,72 +76,56 @@ private val RedCancel = Color(0xFFE53935)
 private val LeatherBrown = Color(0xFF8B5E3C)
 private val BlueAccent = Color(0xFF64B5F6)
 
-private data class AppUser(
-    val id: Int,
-    val name: String,
-    val email: String,
-    val xp: Int,
-    val level: String,
-    val isAdmin: Boolean,
-    val isActive: Boolean,
-    val totalBookings: Int
-)
-
-private val mockUsers = listOf(
-    // ── Peluqueros / Admins (de mockStylists) ──────────────────
-    AppUser(1,  "Admin Principal",    "admin@hairup.com",   0,    "-",      isAdmin = true,  isActive = true,  totalBookings = 0),
-    AppUser(2,  "Ana García",         "ana@hairup.com",     0,    "-",      isAdmin = true,  isActive = true,  totalBookings = 0),
-    AppUser(3,  "Carlos López",       "carlos@hairup.com",  0,    "-",      isAdmin = true,  isActive = true,  totalBookings = 0),
-    AppUser(4,  "Laura Martín",       "laura@hairup.com",   0,    "-",      isAdmin = true,  isActive = true,  totalBookings = 0),
-    AppUser(5,  "Diego Ruiz",         "diego@hairup.com",   0,    "-",      isAdmin = true,  isActive = true,  totalBookings = 0),
-    // ── Clientes ───────────────────────────────────────────────
-    AppUser(6,  "María García",       "maria@email.com",    2350, "Platino", isAdmin = false, isActive = true,  totalBookings = 24),
-    AppUser(7,  "Carlos López",       "carlos@email.com",   1450, "Oro",     isAdmin = false, isActive = true,  totalBookings = 15),
-    AppUser(8,  "Ana Martínez",       "ana@email.com",      1100, "Oro",     isAdmin = false, isActive = true,  totalBookings = 11),
-    AppUser(9,  "Diego Ruiz",         "diego@email.com",    620,  "Plata",   isAdmin = false, isActive = true,  totalBookings = 7),
-    AppUser(10, "Laura Sánchez",      "laura@email.com",    480,  "Plata",   isAdmin = false, isActive = false, totalBookings = 5),
-    AppUser(11, "Pedro Torres",       "pedro@email.com",    180,  "Bronce",  isAdmin = false, isActive = true,  totalBookings = 2),
-    AppUser(12, "Sofía Fernández",    "sofia@email.com",    90,   "Bronce",  isAdmin = false, isActive = false, totalBookings = 1),
-    AppUser(13, "Javier Gómez",       "javier@email.com",   1200, "Oro",     isAdmin = false, isActive = true,  totalBookings = 13),
-    AppUser(14, "Lucía Herrera",      "lucia@email.com",    550,  "Plata",   isAdmin = false, isActive = true,  totalBookings = 6),
-    AppUser(15, "Marcos Díaz",        "marcos@email.com",   230,  "Bronce",  isAdmin = false, isActive = true,  totalBookings = 3)
-)
-
 private sealed class UserAction {
-    data class ToggleAdmin(val user: AppUser) : UserAction()
-    data class ToggleActive(val user: AppUser) : UserAction()
+    data class ToggleAdmin(val user: AdminUser, val makeAdmin: Boolean) : UserAction()
+    data class ToggleActive(val user: AdminUser, val active: Boolean) : UserAction()
 }
 
 @Composable
 fun AdminUsersScreen() {
-    var users by remember { mutableStateOf(mockUsers) }
+    val context = LocalContext.current
+    val sessionManager = remember { SessionManager(context) }
+    val viewModel: AdminUserViewModel = viewModel(
+        factory = AdminUserViewModelFactory(sessionManager)
+    )
+
+    val users by viewModel.users.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
+    val successMessage by viewModel.successMessage.collectAsState()
+    val operationSuccess by viewModel.operationSuccess.collectAsState()
+
     var searchQuery by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf("Todos") }
     var pendingAction by remember { mutableStateOf<UserAction?>(null) }
+
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.resetStates()
+        }
+    }
+
+    LaunchedEffect(operationSuccess) {
+        if (operationSuccess) {
+            successMessage?.let {
+                snackbarHostState.showSnackbar(it)
+            }
+            viewModel.resetStates()
+        }
+    }
+
+    val filteredUsers = remember(searchQuery, selectedFilter, users) {
+        viewModel.getFilteredUsers(searchQuery, selectedFilter)
+    }
 
     val filterOptions = listOf(
         "Todos" to users.size,
         "Clientes" to users.count { !it.isAdmin },
         "Admins" to users.count { it.isAdmin },
-        "Deshabilitados" to users.count { !it.isActive }
-    )
-
-    val filteredUsers = remember(searchQuery, selectedFilter, users) {
-        users
-            .filter { user ->
-                when (selectedFilter) {
-                    "Clientes" -> !user.isAdmin
-                    "Admins" -> user.isAdmin
-                    "Deshabilitados" -> !user.isActive
-                    else -> true
-                }
-            }
-            .filter { user ->
-                searchQuery.isBlank() ||
-                        user.name.contains(searchQuery, ignoreCase = true) ||
-                        user.email.contains(searchQuery, ignoreCase = true)
-            }
-    }
+        "Deshabilitados" to users.count { !it.isActive })
 
     Column(
         modifier = Modifier
@@ -139,7 +135,6 @@ fun AdminUsersScreen() {
     ) {
         Spacer(modifier = Modifier.height(4.dp))
 
-        // Título + contador
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -159,7 +154,6 @@ fun AdminUsersScreen() {
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // Barra de búsqueda
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
@@ -179,7 +173,6 @@ fun AdminUsersScreen() {
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // Chips de filtro
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -196,8 +189,7 @@ fun AdminUsersScreen() {
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null
                         ) { selectedFilter = label }
-                        .padding(horizontal = 14.dp, vertical = 7.dp)
-                ) {
+                        .padding(horizontal = 14.dp, vertical = 7.dp)) {
                     Text(
                         text = "$label ($count)",
                         fontSize = 12.sp,
@@ -210,53 +202,68 @@ fun AdminUsersScreen() {
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Lista de usuarios
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            if (filteredUsers.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 48.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            imageVector = Icons.Default.ManageAccounts,
-                            contentDescription = null,
-                            tint = TextGray.copy(alpha = 0.4f),
-                            modifier = Modifier.size(64.dp)
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = "No se encontraron usuarios",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = TextGray
-                        )
+        if (isLoading && users.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = Gold)
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                if (filteredUsers.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 48.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                imageVector = Icons.Default.ManageAccounts,
+                                contentDescription = null,
+                                tint = TextGray.copy(alpha = 0.4f),
+                                modifier = Modifier.size(64.dp)
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = if (searchQuery.isNotEmpty()) "No se encontraron usuarios con esa búsqueda"
+                                else "No hay usuarios en esta categoría",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = TextGray
+                            )
+                        }
+                    }
+                } else {
+                    filteredUsers.forEach { user ->
+                        UserCard(user = user, onToggleAdmin = {
+                            pendingAction = UserAction.ToggleAdmin(user, !user.isAdmin)
+                        }, onToggleActive = {
+                            pendingAction = UserAction.ToggleActive(user, !user.isActive)
+                        })
                     }
                 }
-            } else {
-                filteredUsers.forEach { user ->
-                    UserCard(
-                        user = user,
-                        onToggleAdmin = { pendingAction = UserAction.ToggleAdmin(user) },
-                        onToggleActive = { pendingAction = UserAction.ToggleActive(user) }
-                    )
-                }
+                Spacer(modifier = Modifier.height(8.dp))
             }
-            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 
-    // Diálogo de confirmación
-    pendingAction?.let { action ->
-        val isGivingAdmin = action is UserAction.ToggleAdmin && !(action as UserAction.ToggleAdmin).user.isAdmin
-        val isEnabling = action is UserAction.ToggleActive && !(action as UserAction.ToggleActive).user.isActive
+    SnackbarHost(
+        hostState = snackbarHostState, modifier = Modifier.padding(16.dp)
+    ) { data ->
+        Snackbar(
+            containerColor = DarkGray, contentColor = White, snackbarData = data
+        )
+    }
 
+    pendingAction?.let { action ->
         val title: String
         val message: String
         val confirmLabel: String
@@ -264,22 +271,22 @@ fun AdminUsersScreen() {
 
         when (action) {
             is UserAction.ToggleAdmin -> {
-                title = if (action.user.isAdmin) "Quitar privilegios de admin" else "Dar privilegios de admin"
-                message = if (action.user.isAdmin)
-                    "¿Quitar los privilegios de administrador a ${action.user.name}? Pasará a ser un cliente normal."
-                else
-                    "¿Dar privilegios de administrador a ${action.user.name}? Tendrá acceso completo al panel de admin."
-                confirmLabel = if (action.user.isAdmin) "Sí, quitar admin" else "Sí, dar admin"
-                btnColor = if (action.user.isAdmin) RedCancel else Gold
+                title =
+                    if (action.makeAdmin) "Dar privilegios de admin" else "Quitar privilegios de admin"
+                message =
+                    if (action.makeAdmin) "¿Dar privilegios de administrador a ${action.user.name}? Tendrá acceso completo al panel de admin."
+                    else "¿Quitar los privilegios de administrador a ${action.user.name}? Pasará a ser un cliente normal."
+                confirmLabel = if (action.makeAdmin) "Sí, dar admin" else "Sí, quitar admin"
+                btnColor = if (action.makeAdmin) Gold else RedCancel
             }
+
             is UserAction.ToggleActive -> {
-                title = if (action.user.isActive) "Deshabilitar usuario" else "Habilitar usuario"
-                message = if (action.user.isActive)
-                    "¿Deshabilitar la cuenta de ${action.user.name}? No podrá acceder a la app."
-                else
-                    "¿Habilitar la cuenta de ${action.user.name}? Recuperará el acceso a la app."
-                confirmLabel = if (action.user.isActive) "Sí, deshabilitar" else "Sí, habilitar"
-                btnColor = if (action.user.isActive) RedCancel else GreenConfirmed
+                title = if (action.active) "Habilitar usuario" else "Deshabilitar usuario"
+                message =
+                    if (action.active) "¿Habilitar la cuenta de ${action.user.name}? Recuperará el acceso a la app."
+                    else "¿Deshabilitar la cuenta de ${action.user.name}? No podrá acceder a la app."
+                confirmLabel = if (action.active) "Sí, habilitar" else "Sí, deshabilitar"
+                btnColor = if (action.active) GreenConfirmed else RedCancel
             }
         }
 
@@ -295,61 +302,33 @@ fun AdminUsersScreen() {
             confirmButton = {
                 Button(
                     onClick = {
-                        val targetId = when (action) {
-                            is UserAction.ToggleAdmin -> action.user.id
-                            is UserAction.ToggleActive -> action.user.id
-                        }
-                        users = users.map { u ->
-                            if (u.id == targetId) when (action) {
-                                is UserAction.ToggleAdmin -> u.copy(isAdmin = !u.isAdmin)
-                                is UserAction.ToggleActive -> u.copy(isActive = !u.isActive)
-                            } else u
+                        when (action) {
+                            is UserAction.ToggleAdmin -> {
+                                viewModel.toggleAdmin(action.user.id, action.makeAdmin)
+                            }
+
+                            is UserAction.ToggleActive -> {
+                                viewModel.toggleActive(action.user.id, action.active)
+                            }
                         }
                         pendingAction = null
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = btnColor,
-                        contentColor = btnTextColor
-                    ),
-                    shape = RoundedCornerShape(8.dp)
+                    }, colors = ButtonDefaults.buttonColors(
+                        containerColor = btnColor, contentColor = btnTextColor
+                    ), shape = RoundedCornerShape(8.dp)
                 ) { Text(confirmLabel, fontWeight = FontWeight.Bold) }
             },
             dismissButton = {
                 TextButton(onClick = { pendingAction = null }) {
                     Text("Cancelar", color = TextGray)
                 }
-            }
-        )
+            })
     }
 }
 
 @Composable
 private fun UserCard(
-    user: AppUser,
-    onToggleAdmin: () -> Unit,
-    onToggleActive: () -> Unit
+    user: AdminUser, onToggleAdmin: () -> Unit, onToggleActive: () -> Unit
 ) {
-    val avatarColor = when {
-        !user.isActive -> TextGray.copy(alpha = 0.5f)
-        user.isAdmin -> Gold
-        else -> BlueAccent
-    }
-    val nameColor = if (user.isActive) White else TextGray
-
-    val initials = user.name
-        .split(" ")
-        .take(2)
-        .mapNotNull { it.firstOrNull()?.uppercaseChar() }
-        .joinToString("")
-
-    val levelColor = when (user.level) {
-        "Platino" -> Color(0xFFB9F2FF)
-        "Oro" -> Color(0xFFFFD700)
-        "Plata" -> Color(0xFFC0C0C0)
-        "Bronce" -> Color(0xFFCD7F32)
-        else -> TextGray
-    }
-
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = CardBg),
@@ -358,20 +337,19 @@ private fun UserCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
 
-            // Fila superior: avatar + info + badges
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
                         .size(50.dp)
                         .clip(CircleShape)
-                        .background(avatarColor.copy(alpha = 0.2f)),
+                        .background(user.avatarColor.copy(alpha = 0.2f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = initials,
+                        text = user.initials,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = avatarColor
+                        color = user.avatarColor
                     )
                 }
 
@@ -382,7 +360,7 @@ private fun UserCard(
                         text = user.name,
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
-                        color = nameColor
+                        color = user.nameColor
                     )
                     Text(
                         text = user.email,
@@ -392,7 +370,6 @@ private fun UserCard(
                     )
                 }
 
-                // Badges rol + estado
                 Column(
                     horizontalAlignment = Alignment.End,
                     verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -402,7 +379,6 @@ private fun UserCard(
                 }
             }
 
-            // Info extra para clientes
             if (!user.isAdmin) {
                 Spacer(modifier = Modifier.height(10.dp))
                 Row(
@@ -413,13 +389,13 @@ private fun UserCard(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(20.dp))
-                            .background(levelColor.copy(alpha = 0.15f))
+                            .background(user.levelColor.copy(alpha = 0.15f))
                             .padding(horizontal = 8.dp, vertical = 3.dp)
                     ) {
                         Text(
                             text = user.level,
                             style = MaterialTheme.typography.labelSmall,
-                            color = levelColor,
+                            color = user.levelColor,
                             fontWeight = FontWeight.Bold,
                             fontSize = 10.sp
                         )
@@ -454,9 +430,7 @@ private fun UserCard(
             Divider(color = White.copy(alpha = 0.06f))
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Acciones
             if (user.id == 1) {
-                // Admin principal — protegido
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -474,13 +448,17 @@ private fun UserCard(
                 }
             } else {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    // Botón dar/quitar admin
                     Button(
                         onClick = onToggleAdmin,
                         modifier = Modifier.weight(1f),
+                        enabled = user.isActive,
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (user.isAdmin) RedCancel.copy(alpha = 0.12f) else Gold.copy(alpha = 0.15f),
-                            contentColor = if (user.isAdmin) RedCancel else Gold
+                            containerColor = if (user.isAdmin) RedCancel.copy(alpha = 0.12f) else Gold.copy(
+                                alpha = 0.15f
+                            ),
+                            contentColor = if (user.isAdmin) RedCancel else Gold,
+                            disabledContainerColor = TextGray.copy(alpha = 0.1f),
+                            disabledContentColor = TextGray
                         ),
                         shape = RoundedCornerShape(10.dp),
                         elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
@@ -498,13 +476,13 @@ private fun UserCard(
                         )
                     }
 
-                    // Botón habilitar/deshabilitar
                     Button(
                         onClick = onToggleActive,
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (user.isActive) RedCancel.copy(alpha = 0.12f) else GreenConfirmed.copy(alpha = 0.15f),
-                            contentColor = if (user.isActive) RedCancel else GreenConfirmed
+                            containerColor = if (user.isActive) RedCancel.copy(alpha = 0.12f) else GreenConfirmed.copy(
+                                alpha = 0.15f
+                            ), contentColor = if (user.isActive) RedCancel else GreenConfirmed
                         ),
                         shape = RoundedCornerShape(10.dp),
                         elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)

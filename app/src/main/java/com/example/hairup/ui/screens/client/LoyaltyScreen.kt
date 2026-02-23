@@ -2,7 +2,6 @@ package com.example.hairup.ui.screens.client
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,7 +21,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Star
@@ -34,8 +33,12 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -57,14 +60,11 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.hairup.data.SessionManager
 import com.example.hairup.model.Level
-import com.example.hairup.model.Reward
-import com.example.hairup.model.User
 import com.example.hairup.ui.components.LevelIcon
 import com.example.hairup.ui.components.getLevelColor
 import com.example.hairup.ui.viewmodel.RewardViewModel
 import com.example.hairup.ui.viewmodel.RewardViewModelFactory
 
-// Colores del tema
 private val CarbonBlack = Color(0xFF121212)
 private val DarkGray = Color(0xFF1E1E1E)
 private val DarkSurface = Color(0xFF1A1A1A)
@@ -76,12 +76,21 @@ private val TextGray = Color(0xFFB0B0B0)
 private val White = Color(0xFFFFFFFF)
 private val GreenSuccess = Color(0xFF4CAF50)
 
-// Datos de niveles (mock temporal - vendrán del backend)
 private val allLevels = listOf(
     Level(id = 1, name = "Bronce", required = 0, reward = "5% descuento en productos"),
     Level(id = 2, name = "Plata", required = 500, reward = "10% descuento en servicios"),
-    Level(id = 3, name = "Oro", required = 1000, reward = "Corte gratis cada 10 visitas + 15% descuento"),
-    Level(id = 4, name = "Platino", required = 2000, reward = "Tratamiento premium gratis + 25% descuento")
+    Level(
+        id = 3,
+        name = "Oro",
+        required = 1000,
+        reward = "Corte gratis cada 10 visitas + 15% descuento"
+    ),
+    Level(
+        id = 4,
+        name = "Platino",
+        required = 2000,
+        reward = "Tratamiento premium gratis + 25% descuento"
+    )
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -102,14 +111,12 @@ fun LoyaltyScreen(
     val userPoints by viewModel.userPoints.collectAsState()
     val userLevelId by viewModel.userLevelId.collectAsState()
 
-    // Obtener usuario para nombre y XP
     val currentUser = sessionManager.getUser()
 
     var selectedRewardId by remember { mutableStateOf<Int?>(null) }
     var showRedeemDialog by remember { mutableStateOf(false) }
     var showResultDialog by remember { mutableStateOf(false) }
 
-    // Si no hay usuario, volver
     if (currentUser == null) {
         LaunchedEffect(Unit) {
             onBack()
@@ -117,12 +124,10 @@ fun LoyaltyScreen(
         return
     }
 
-    // Cargar recompensas al iniciar
     LaunchedEffect(Unit) {
         viewModel.loadRewards()
     }
 
-    // Mostrar resultado de canje
     LaunchedEffect(redeemResult) {
         if (redeemResult != null) {
             showResultDialog = true
@@ -136,31 +141,25 @@ fun LoyaltyScreen(
     } else 1f
 
     Scaffold(
-        containerColor = CarbonBlack,
-        topBar = {
+        containerColor = CarbonBlack, topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = "Mi Fidelidad",
-                        fontWeight = FontWeight.Bold,
-                        color = Gold
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Volver",
-                            tint = Gold
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = DarkGray
+                Text(
+                    text = "Mi Fidelidad", fontWeight = FontWeight.Bold, color = Gold
                 )
+            }, navigationIcon = {
+                IconButton(onClick = onBack) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Volver",
+                        tint = Gold
+                    )
+                }
+            }, colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = DarkGray
             )
-        }
-    ) { padding ->
+            )
+        }) { padding ->
         Column(
             modifier = Modifier
                 .padding(padding)
@@ -168,7 +167,6 @@ fun LoyaltyScreen(
                 .verticalScroll(rememberScrollState())
                 .background(CarbonBlack)
         ) {
-            // A) Header - Tu nivel actual
             LevelHeader(
                 userName = currentUser.name,
                 userXp = currentUser.xp,
@@ -178,19 +176,16 @@ fun LoyaltyScreen(
                 xpProgress = xpProgress
             )
 
-        Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            // B) Niveles y sus ventajas
             SectionTitle("Niveles y Ventajas")
             Spacer(modifier = Modifier.height(12.dp))
             LevelCardsRow(
-                levels = allLevels,
-                currentLevelId = userLevelId
+                levels = allLevels, currentLevelId = userLevelId
             )
 
-        Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
-            // C) Recompensas disponibles
             SectionTitle("Recompensas Disponibles")
             Spacer(modifier = Modifier.height(4.dp))
             Text(
@@ -212,12 +207,10 @@ fun LoyaltyScreen(
                 }
             } else {
                 RewardsSection(
-                    rewards = rewards,
-                    onRedeemClick = { rewardId ->
+                    rewards = rewards, onRedeemClick = { rewardId ->
                         selectedRewardId = rewardId
                         showRedeemDialog = true
-                    }
-                )
+                    })
             }
 
             if (errorMessage != null) {
@@ -229,10 +222,10 @@ fun LoyaltyScreen(
                 )
             }
 
-        Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(32.dp))
+        }
     }
 
-    // Diálogo de confirmación de canje
     if (showRedeemDialog && selectedRewardId != null) {
         val reward = rewards.find { it.id == selectedRewardId }
         if (reward != null) {
@@ -243,16 +236,13 @@ fun LoyaltyScreen(
                 textContentColor = TextGray,
                 title = {
                     Text(
-                        text = "Canjear recompensa",
-                        fontWeight = FontWeight.Bold
+                        text = "Canjear recompensa", fontWeight = FontWeight.Bold
                     )
                 },
                 text = {
                     Column {
                         Text(
-                            text = reward.name,
-                            fontWeight = FontWeight.Bold,
-                            color = Gold
+                            text = reward.name, fontWeight = FontWeight.Bold, color = Gold
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(reward.description)
@@ -268,12 +258,9 @@ fun LoyaltyScreen(
                         onClick = {
                             showRedeemDialog = false
                             viewModel.redeemReward(reward.id)
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Gold,
-                            contentColor = CarbonBlack
-                        ),
-                        shape = RoundedCornerShape(8.dp)
+                        }, colors = ButtonDefaults.buttonColors(
+                            containerColor = Gold, contentColor = CarbonBlack
+                        ), shape = RoundedCornerShape(8.dp)
                     ) {
                         Text("Sí, canjear")
                     }
@@ -282,63 +269,49 @@ fun LoyaltyScreen(
                     Button(
                         onClick = { showRedeemDialog = false },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = DarkSurface,
-                            contentColor = TextGray
+                            containerColor = DarkSurface, contentColor = TextGray
                         ),
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text("Cancelar")
                     }
-                }
-            )
+                })
         }
     }
 
-    // Diálogo de resultado
     if (showResultDialog && redeemResult != null) {
-        AlertDialog(
-            onDismissRequest = {
-                showResultDialog = false
-                viewModel.resetRedeemSuccess()
-            },
-            containerColor = DarkGray,
-            titleContentColor = White,
-            icon = {
-                if (redeemResult!!.success) {
-                    Icon(
-                        Icons.Default.CheckCircle,
-                        null,
-                        tint = GreenSuccess,
-                        modifier = Modifier.size(40.dp)
-                    )
-                }
-            },
-            title = {
-                Text(
-                    text = if (redeemResult!!.success) "¡Canje exitoso!" else "Error",
-                    fontWeight = FontWeight.Bold,
-                    color = if (redeemResult!!.success) GreenSuccess else Color(0xFFE53935)
+        AlertDialog(onDismissRequest = {
+            showResultDialog = false
+            viewModel.resetRedeemSuccess()
+        }, containerColor = DarkGray, titleContentColor = White, icon = {
+            if (redeemResult!!.success) {
+                Icon(
+                    Icons.Default.CheckCircle,
+                    null,
+                    tint = GreenSuccess,
+                    modifier = Modifier.size(40.dp)
                 )
-            },
-            text = {
-                Text(redeemResult!!.message)
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showResultDialog = false
-                        viewModel.resetRedeemSuccess()
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Gold,
-                        contentColor = CarbonBlack
-                    ),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text("Aceptar")
-                }
             }
-        )
+        }, title = {
+            Text(
+                text = if (redeemResult!!.success) "¡Canje exitoso!" else "Error",
+                fontWeight = FontWeight.Bold,
+                color = if (redeemResult!!.success) GreenSuccess else Color(0xFFE53935)
+            )
+        }, text = {
+            Text(redeemResult!!.message)
+        }, confirmButton = {
+            Button(
+                onClick = {
+                    showResultDialog = false
+                    viewModel.resetRedeemSuccess()
+                }, colors = ButtonDefaults.buttonColors(
+                    containerColor = Gold, contentColor = CarbonBlack
+                ), shape = RoundedCornerShape(8.dp)
+            ) {
+                Text("Aceptar")
+            }
+        })
     }
 }
 
@@ -353,7 +326,6 @@ private fun SectionTitle(title: String) {
     )
 }
 
-// A) Level Header (actualizado para recibir datos en lugar de User)
 @Composable
 private fun LevelHeader(
     userName: String,
@@ -371,7 +343,6 @@ private fun LevelHeader(
         shape = RoundedCornerShape(20.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
-        // Gold top accent
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -389,11 +360,8 @@ private fun LevelHeader(
                 .fillMaxWidth()
                 .padding(24.dp)
         ) {
-            // Large level badge
             LevelIcon(
-                levelName = currentLevel.name,
-                size = 64.dp,
-                showGlow = true
+                levelName = currentLevel.name, size = 64.dp, showGlow = true
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -408,19 +376,14 @@ private fun LevelHeader(
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = userName,
-                style = MaterialTheme.typography.bodyLarge,
-                color = TextGray
+                text = userName, style = MaterialTheme.typography.bodyLarge, color = TextGray
             )
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // XP y Points
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                // XP
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         text = "$userXp",
@@ -435,7 +398,6 @@ private fun LevelHeader(
                     )
                 }
 
-                // Points
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         text = "$userPoints",
@@ -466,7 +428,9 @@ private fun LevelHeader(
                         .height(12.dp)
                         .clip(RoundedCornerShape(6.dp))
                         .background(
-                            Brush.horizontalGradient(colors = listOf(GoldDark, Gold, GoldLight))
+                            Brush.horizontalGradient(
+                                colors = listOf(GoldDark, Gold, GoldLight)
+                            )
                         )
                 )
             }
@@ -484,7 +448,9 @@ private fun LevelHeader(
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextGray
                     )
-                    LevelIcon(levelName = nextLevel.name, size = 18.dp)
+                    LevelIcon(
+                        levelName = nextLevel.name, size = 18.dp
+                    )
                 }
             } else {
                 Text(
@@ -498,9 +464,10 @@ private fun LevelHeader(
     }
 }
 
-// B) Level Cards (horizontal scroll)
 @Composable
-private fun LevelCardsRow(levels: List<Level>, currentLevelId: Int) {
+private fun LevelCardsRow(
+    levels: List<Level>, currentLevelId: Int
+) {
     LazyRow(
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -514,23 +481,32 @@ private fun LevelCardsRow(levels: List<Level>, currentLevelId: Int) {
 }
 
 @Composable
-private fun LevelCard(level: Level, isUnlocked: Boolean, isCurrent: Boolean) {
+private fun LevelCard(
+    level: Level, isUnlocked: Boolean, isCurrent: Boolean
+) {
     Card(
         modifier = Modifier
             .width(170.dp)
-            .then(if (isCurrent) Modifier.border(2.dp, Gold, RoundedCornerShape(16.dp)) else Modifier)
-            .then(if (!isUnlocked) Modifier.alpha(0.5f) else Modifier),
-        colors = CardDefaults.cardColors(containerColor = if (isCurrent) DarkSurface else DarkGray),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isCurrent) 8.dp else 2.dp)
+            .then(
+                if (isCurrent) Modifier.border(2.dp, Gold, RoundedCornerShape(16.dp))
+                else Modifier
+            )
+            .then(
+                if (!isUnlocked) Modifier.alpha(0.5f)
+                else Modifier
+            ), colors = CardDefaults.cardColors(
+            containerColor = if (isCurrent) DarkSurface else DarkGray
+        ), shape = RoundedCornerShape(16.dp), elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isCurrent) 8.dp else 2.dp
+        )
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Badge or lock
             if (isUnlocked) {
-                LevelIcon(levelName = level.name, size = 48.dp, showGlow = isCurrent)
+                LevelIcon(
+                    levelName = level.name, size = 48.dp, showGlow = isCurrent
+                )
             } else {
                 Box(
                     modifier = Modifier
@@ -588,11 +564,9 @@ private fun LevelCard(level: Level, isUnlocked: Boolean, isCurrent: Boolean) {
     }
 }
 
-// C) Rewards Section
 @Composable
 private fun RewardsSection(
-    rewards: List<RewardViewModel.RewardItem>,
-    onRedeemClick: (Int) -> Unit
+    rewards: List<RewardViewModel.RewardItem>, onRedeemClick: (Int) -> Unit
 ) {
     Column(
         modifier = Modifier.padding(horizontal = 16.dp),
@@ -606,17 +580,13 @@ private fun RewardsSection(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "No hay recompensas disponibles",
-                    color = TextGray,
-                    fontSize = 14.sp
+                    text = "No hay recompensas disponibles", color = TextGray, fontSize = 14.sp
                 )
             }
         } else {
             rewards.forEach { reward ->
                 RewardCard(
-                    reward = reward,
-                    onRedeemClick = { onRedeemClick(reward.id) }
-                )
+                    reward = reward, onRedeemClick = { onRedeemClick(reward.id) })
             }
         }
     }
@@ -624,8 +594,7 @@ private fun RewardsSection(
 
 @Composable
 private fun RewardCard(
-    reward: RewardViewModel.RewardItem,
-    onRedeemClick: () -> Unit
+    reward: RewardViewModel.RewardItem, onRedeemClick: () -> Unit
 ) {
     val levelName = when (reward.minLevelId) {
         1 -> "Bronce"
@@ -650,10 +619,8 @@ private fun RewardCard(
                 .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Level badge
             LevelIcon(
-                levelName = levelName,
-                size = 36.dp
+                levelName = levelName, size = 36.dp
             )
 
             Spacer(modifier = Modifier.width(12.dp))

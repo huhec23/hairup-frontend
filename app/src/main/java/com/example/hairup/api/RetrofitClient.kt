@@ -9,25 +9,18 @@ import java.util.concurrent.TimeUnit
 object RetrofitClient {
 
 
-   // private const val BASE_URL = "http://10.0.2.2:8080/"
-    private const val BASE_URL = "http://10.115.64.165:8080/"
-
+    private const val BASE_URL = "http://10.0.2.2:8080/"
 
     private val logging = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
     }
 
-    private val client = OkHttpClient.Builder()
-        .addInterceptor(logging)
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .build()
+    private val client =
+        OkHttpClient.Builder().addInterceptor(logging).connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS).build()
 
-    private val retrofit = Retrofit.Builder()
-        .baseUrl(BASE_URL)
-        .client(client)
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
+    private val retrofit = Retrofit.Builder().baseUrl(BASE_URL).client(client)
+        .addConverterFactory(GsonConverterFactory.create()).build()
 
     val apiService: ApiService = retrofit.create(ApiService::class.java)
 }

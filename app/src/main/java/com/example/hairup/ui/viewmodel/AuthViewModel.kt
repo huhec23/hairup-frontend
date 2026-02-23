@@ -55,11 +55,6 @@ class AuthViewModel(
         }
     }
 
-    fun resetStates() {
-        _loginState.value = AuthState.Idle
-        _registerState.value = AuthState.Idle
-    }
-
     sealed class AuthState {
         object Idle : AuthState()
         object Loading : AuthState()

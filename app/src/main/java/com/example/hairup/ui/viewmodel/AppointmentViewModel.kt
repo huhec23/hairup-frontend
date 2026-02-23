@@ -1,6 +1,5 @@
 package com.example.hairup.ui.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.hairup.api.models.AppointmentResponse
@@ -10,8 +9,7 @@ import com.example.hairup.model.BookingStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Calendar
 
 class AppointmentViewModel(
     private val sessionManager: SessionManager,
@@ -58,16 +56,13 @@ class AppointmentViewModel(
 
         repository.getUserAppointments(token) { result ->
             viewModelScope.launch {
-                result.fold(
-                    onSuccess = { appointments ->
-                        processAppointments(appointments)
-                        _isLoading.value = false
-                    },
-                    onFailure = { exception ->
-                        _errorMessage.value = exception.message ?: "Error al cargar citas"
-                        _isLoading.value = false
-                    }
-                )
+                result.fold(onSuccess = { appointments ->
+                    processAppointments(appointments)
+                    _isLoading.value = false
+                }, onFailure = { exception ->
+                    _errorMessage.value = exception.message ?: "Error al cargar citas"
+                    _isLoading.value = false
+                })
             }
         }
     }
@@ -87,26 +82,21 @@ class AppointmentViewModel(
         appointments.forEach { apt ->
             val status = BookingStatus.fromCode(apt.status)
 
-            // Parsear la fecha de la cita
             val appointmentCal = Calendar.getInstance()
             try {
                 val dateParts = apt.date.split("-")
                 if (dateParts.size == 3) {
                     appointmentCal.set(
-                        dateParts[0].toInt(),
-                        dateParts[1].toInt() - 1, // Mes en Calendar es 0-based
-                        dateParts[2].toInt()
+                        dateParts[0].toInt(), dateParts[1].toInt() - 1, dateParts[2].toInt()
                     )
                 }
-            } catch (e: Exception) {
-                // Si no se puede parsear, la tratamos como upcoming por defecto
+            } catch (_: Exception) {
                 upcoming.add(createAppointmentItem(apt, status))
                 return@forEach
             }
 
-            // Parsear la hora
             val timeParts = apt.time.split(":")
-            val appointmentHour = if (timeParts.size >= 1) timeParts[0].toInt() else 0
+            val appointmentHour = if (timeParts.isNotEmpty()) timeParts[0].toInt() else 0
             val appointmentMinute = if (timeParts.size >= 2) timeParts[1].toInt() else 0
 
             appointmentCal.set(Calendar.HOUR_OF_DAY, appointmentHour)
@@ -115,9 +105,10 @@ class AppointmentViewModel(
             val isPast = when {
                 status == BookingStatus.COMPLETED || status == BookingStatus.CANCELLED -> true
                 appointmentCal.before(today) -> true
-                appointmentCal.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
-                        appointmentCal.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR) &&
-                        appointmentCal.before(now) && status != BookingStatus.PENDING -> true
+                appointmentCal.get(Calendar.YEAR) == today.get(Calendar.YEAR) && appointmentCal.get(
+                    Calendar.DAY_OF_YEAR
+                ) == today.get(Calendar.DAY_OF_YEAR) && appointmentCal.before(now) && status != BookingStatus.PENDING -> true
+
                 else -> false
             }
 
@@ -126,7 +117,7 @@ class AppointmentViewModel(
                 serviceName = apt.serviceName,
                 date = apt.date,
                 dateFormatted = formatDate(apt.date),
-                time = apt.time.substring(0, 5),
+                time = apt.time.take(5),
                 stylistName = apt.stylistName,
                 status = status,
                 price = apt.price,
@@ -141,18 +132,19 @@ class AppointmentViewModel(
             }
         }
 
-        // Ordenar: próximas por fecha ascendente, pasadas por fecha descendente
         _upcomingAppointments.value = upcoming.sortedBy { "${it.date} ${it.time}" }
         _pastAppointments.value = past.sortedByDescending { "${it.date} ${it.time}" }
     }
 
-    private fun createAppointmentItem(apt: AppointmentResponse, status: BookingStatus): AppointmentItem {
+    private fun createAppointmentItem(
+        apt: AppointmentResponse, status: BookingStatus
+    ): AppointmentItem {
         return AppointmentItem(
             id = apt.id,
             serviceName = apt.serviceName,
             date = apt.date,
             dateFormatted = formatDate(apt.date),
-            time = apt.time.substring(0, 5),
+            time = apt.time.take(5),
             stylistName = apt.stylistName,
             status = status,
             price = apt.price,
@@ -173,26 +165,19 @@ class AppointmentViewModel(
 
         repository.cancelAppointment(token, appointmentId) { result ->
             viewModelScope.launch {
-                result.fold(
-                    onSuccess = {
-                        _cancelSuccess.value = true
-                        loadAppointments()
-                    },
-                    onFailure = { exception ->
-                        _errorMessage.value = exception.message ?: "Error al cancelar cita"
-                        _isLoading.value = false
-                    }
-                )
+                result.fold(onSuccess = {
+                    _cancelSuccess.value = true
+                    loadAppointments()
+                }, onFailure = { exception ->
+                    _errorMessage.value = exception.message ?: "Error al cancelar cita"
+                    _isLoading.value = false
+                })
             }
         }
     }
 
     fun resetCancelSuccess() {
         _cancelSuccess.value = false
-    }
-
-    fun clearError() {
-        _errorMessage.value = null
     }
 
     private fun formatDate(dateStr: String): String {
@@ -204,8 +189,18 @@ class AppointmentViewModel(
                 val day = parts[2].toInt()
 
                 val monthNames = listOf(
-                    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-                    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+                    "Enero",
+                    "Febrero",
+                    "Marzo",
+                    "Abril",
+                    "Mayo",
+                    "Junio",
+                    "Julio",
+                    "Agosto",
+                    "Septiembre",
+                    "Octubre",
+                    "Noviembre",
+                    "Diciembre"
                 )
 
                 val dayOfWeek = getDayOfWeek(year, month, day)
@@ -214,7 +209,7 @@ class AppointmentViewModel(
             } else {
                 dateStr
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             dateStr
         }
     }

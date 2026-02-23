@@ -16,7 +16,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -66,7 +66,6 @@ fun RegisterScreen(
     var showApiError by remember { mutableStateOf(false) }
     var apiErrorMessage by remember { mutableStateOf("") }
 
-    // Observar el estado del registro
     LaunchedEffect(viewModel.registerState) {
         viewModel.registerState.collect { state ->
             when (state) {
@@ -87,18 +86,17 @@ fun RegisterScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF121212)) // Carbon Black
+            .background(Color(0xFF121212))
     ) {
-        // Botón de volver
         IconButton(
             onClick = onNavigateBack, modifier = Modifier
                 .padding(16.dp)
                 .align(Alignment.TopStart)
         ) {
             Icon(
-                imageVector = Icons.Default.ArrowBack,
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = "Volver",
-                tint = Color(0xFFD4AF37) // Gold
+                tint = Color(0xFFD4AF37)
             )
         }
 
@@ -110,13 +108,11 @@ fun RegisterScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Logo pequeño
             Box(
                 modifier = Modifier
                     .size(120.dp)
                     .border(
-                        width = 2.dp, color = Color(0xFFD4AF37), // Gold
-                        shape = CircleShape
+                        width = 2.dp, color = Color(0xFFD4AF37), shape = CircleShape
                     )
                     .padding(8.dp), contentAlignment = Alignment.Center
             ) {
@@ -126,14 +122,16 @@ fun RegisterScreen(
                     modifier = Modifier
                         .size(104.dp)
                         .clip(CircleShape),
-                    colorFilter = ColorFilter.tint(Color(0xFFD4AF37)) // Gold
+                    colorFilter = ColorFilter.tint(Color(0xFFD4AF37))
                 )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "Crear Cuenta", fontSize = 28.sp, color = Color(0xFFD4AF37), // Gold
+                text = "Crear Cuenta",
+                fontSize = 28.sp,
+                color = Color(0xFFD4AF37),
                 fontWeight = FontWeight.Bold
             )
 
@@ -142,7 +140,7 @@ fun RegisterScreen(
             Text(
                 text = "Únete a HairUp y comienza a reservar",
                 fontSize = 14.sp,
-                color = Color(0xFFB0B0B0), // TextGray
+                color = Color(0xFFB0B0B0),
                 fontWeight = FontWeight.Normal,
                 textAlign = TextAlign.Center
             )
@@ -275,7 +273,7 @@ fun RegisterScreen(
             Text(
                 text = "Al registrarte, aceptas nuestros términos\ny condiciones de uso",
                 fontSize = 12.sp,
-                color = Color(0xFFB0B0B0), // TextGray
+                color = Color(0xFFB0B0B0),
                 textAlign = TextAlign.Center,
                 lineHeight = 16.sp
             )

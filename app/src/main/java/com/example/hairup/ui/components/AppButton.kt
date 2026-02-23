@@ -13,10 +13,7 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun AppButton(
-    text: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true
 ) {
     Button(
         onClick = onClick,

@@ -19,13 +19,10 @@ class HomeViewModel(
 
     private val _homeState = MutableStateFlow<HomeState>(HomeState.Loading)
     val homeState: StateFlow<HomeState> = _homeState
-    private val TAG = "HomeViewModel"
+    private val tag = "HomeViewModel"
 
     data class NextAppointment(
-        val serviceName: String,
-        val date: String,
-        val time: String,
-        val stylistName: String
+        val serviceName: String, val date: String, val time: String, val stylistName: String
     )
 
     data class HomeData(
@@ -51,7 +48,7 @@ class HomeViewModel(
         }
 
         _homeState.value = HomeState.Loading
-        Log.d(TAG, "Cargando datos para usuario: ${user.name}")
+        Log.d(tag, "Cargando datos para usuario: ${user.name}")
 
         var levelsLoaded = false
         var appointmentLoaded = false
@@ -60,20 +57,18 @@ class HomeViewModel(
 
         fun tryCombineResults() {
             if (levelsLoaded && appointmentLoaded) {
-                Log.d(TAG, "Ambas llamadas completadas")
+                Log.d(tag, "Ambas llamadas completadas")
 
-                // Verificar si hubo error en niveles
                 if (levelsResult?.isFailure == true) {
                     val error = levelsResult!!.exceptionOrNull()
-                    Log.e(TAG, "Error en niveles: ${error?.message}")
+                    Log.e(tag, "Error en niveles: ${error?.message}")
                     _homeState.value = HomeState.Error(error?.message ?: "Error al cargar niveles")
                     return
                 }
 
-                // Verificar si hubo error en cita (que no sea 404)
                 if (appointmentResult?.isFailure == true) {
                     val error = appointmentResult!!.exceptionOrNull()
-                    Log.e(TAG, "Error en cita: ${error?.message}")
+                    Log.e(tag, "Error en cita: ${error?.message}")
                     _homeState.value = HomeState.Error(error?.message ?: "Error al cargar cita")
                     return
                 }
@@ -81,28 +76,31 @@ class HomeViewModel(
                 val levels = levelsResult?.getOrNull() ?: emptyList()
                 val appointment = appointmentResult?.getOrNull()
 
-                Log.d(TAG, "Niveles cargados: ${levels.size}")
-                Log.d(TAG, "Cita recibida: ${if (appointment != null) "Sí" else "No"}")
+                Log.d(tag, "Niveles cargados: ${levels.size}")
+                Log.d(tag, "Cita recibida: ${if (appointment != null) "Sí" else "No"}")
 
-                val currentLevel = levels.find { it.id == user.levelId }
-                    ?: Level(id = 1, name = "Bronce", required = 0, reward = "")
+                val currentLevel = levels.find { it.id == user.levelId } ?: Level(
+                    id = 1,
+                    name = "Bronce",
+                    required = 0,
+                    reward = ""
+                )
 
                 val nextLevel = levels.find { it.id == user.levelId + 1 }
 
-                Log.d(TAG, "Nivel actual: ${currentLevel.name} (ID: ${currentLevel.id})")
-                Log.d(TAG, "Siguiente nivel: ${nextLevel?.name ?: "Ninguno"}")
+                Log.d(tag, "Nivel actual: ${currentLevel.name} (ID: ${currentLevel.id})")
+                Log.d(tag, "Siguiente nivel: ${nextLevel?.name ?: "Ninguno"}")
 
-                // La parte de creación del NextAppointment sigue igual:
                 val nextAppointment = if (appointment != null) {
-                    Log.d(TAG, "Creando NextAppointment con: ${appointment.serviceName}")
+                    Log.d(tag, "Creando NextAppointment con: ${appointment.serviceName}")
                     NextAppointment(
-                        serviceName = appointment.serviceName!!, // Ya sabemos que no es null por la validación
-                        date = appointment.date!!,
-                        time = appointment.time!!,
-                        stylistName = appointment.stylistName!!
+                        serviceName = appointment.serviceName,
+                        date = appointment.date,
+                        time = appointment.time,
+                        stylistName = appointment.stylistName
                     )
                 } else {
-                    Log.d(TAG, "No hay cita, nextAppointment = null")
+                    Log.d(tag, "No hay cita, nextAppointment = null")
                     null
                 }
 
@@ -113,7 +111,7 @@ class HomeViewModel(
                     nextLevel = nextLevel
                 )
 
-                Log.d(TAG, "HomeData creado correctamente")
+                Log.d(tag, "HomeData creado correctamente")
                 _homeState.value = HomeState.Success(homeData)
             }
         }
@@ -122,7 +120,7 @@ class HomeViewModel(
             viewModelScope.launch {
                 levelsResult = result
                 levelsLoaded = true
-                Log.d(TAG, "Niveles cargados, levelsLoaded = true")
+                Log.d(tag, "Niveles cargados, levelsLoaded = true")
                 tryCombineResults()
             }
         }
@@ -131,7 +129,7 @@ class HomeViewModel(
             viewModelScope.launch {
                 appointmentResult = result
                 appointmentLoaded = true
-                Log.d(TAG, "Cita cargada, appointmentLoaded = true")
+                Log.d(tag, "Cita cargada, appointmentLoaded = true")
                 tryCombineResults()
             }
         }

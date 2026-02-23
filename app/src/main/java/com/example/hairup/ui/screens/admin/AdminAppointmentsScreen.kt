@@ -27,6 +27,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Tab
@@ -36,7 +37,10 @@ import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -44,11 +48,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.hairup.model.StylistAppointment
-import com.example.hairup.model.mockStylistAppointments
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.hairup.data.SessionManager
+import com.example.hairup.model.AdminAppointment
+import com.example.hairup.ui.viewmodel.AdminAppointmentViewModel
+import com.example.hairup.ui.viewmodel.AdminAppointmentViewModelFactory
 
 private val CarbonBlack = Color(0xFF121212)
 private val DarkGray = Color(0xFF1E1E1E)
@@ -58,33 +66,55 @@ private val GoldLight = Color(0xFFE2C478)
 private val TextGray = Color(0xFFB0B0B0)
 private val White = Color(0xFFFFFFFF)
 private val GreenConfirmed = Color(0xFF4CAF50)
-private val AmberYellow = Color(0xFFFFC107)
 private val RedCancel = Color(0xFFE53935)
+private val BlueCompleted = Color(0xFF64B5F6)
 
 @Composable
 fun AdminAppointmentsScreen(stylistId: Int = 0) {
-    val isGenericAdmin = stylistId == 0
+    val context = LocalContext.current
+    val sessionManager = remember { SessionManager(context) }
+    val viewModel: AdminAppointmentViewModel = viewModel(
+        factory = AdminAppointmentViewModelFactory(sessionManager)
+    )
 
-    // Datos base filtrados por peluquero (o todos si admin general)
-    val baseAppointments = remember(stylistId) {
-        if (isGenericAdmin) mockStylistAppointments
-        else mockStylistAppointments.filter { it.stylistId == stylistId }
-    }
+    val appointments by viewModel.appointments.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
+    val operationSuccess by viewModel.operationSuccess.collectAsState()
 
-    var selectedTab by remember { mutableStateOf(0) }
-    val tabs = listOf("Hoy", "Próximas")
+    val todayAppointments = viewModel.todayAppointments
+    val upcomingAppointments = viewModel.upcomingAppointments
+    val pastAppointments = viewModel.pastAppointments
 
-    // Estado local para confirmar/cancelar (copia mutable de los datos)
-    var todayList by remember(stylistId) {
-        mutableStateOf(baseAppointments.filter { it.isToday })
-    }
-    var upcomingList by remember(stylistId) {
-        mutableStateOf(baseAppointments.filter { !it.isToday })
-    }
+    var selectedTab by remember { mutableIntStateOf(0) }
+    val tabs = listOf("Hoy", "Próximas", "Pasadas")
 
     var showConfirmDialog by remember { mutableStateOf(false) }
     var showCancelDialog by remember { mutableStateOf(false) }
-    var targetAppointment by remember { mutableStateOf<StylistAppointment?>(null) }
+    var showCompleteDialog by remember { mutableStateOf(false) }
+    var targetAppointment by remember { mutableStateOf<AdminAppointment?>(null) }
+
+    LaunchedEffect(stylistId) {
+        viewModel.loadAppointments(stylistId)
+    }
+
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let {
+            viewModel.resetStates()
+        }
+    }
+
+    LaunchedEffect(operationSuccess) {
+        if (operationSuccess) {
+            viewModel.resetStates()
+        }
+    }
+
+    val currentList = when (selectedTab) {
+        0 -> todayAppointments
+        1 -> upcomingAppointments
+        else -> pastAppointments
+    }
 
     Column(
         modifier = Modifier
@@ -96,32 +126,63 @@ fun AdminAppointmentsScreen(stylistId: Int = 0) {
             containerColor = DarkGray,
             contentColor = Gold,
             indicator = { tabPositions ->
-                TabRowDefaults.Indicator(
+                TabRowDefaults.SecondaryIndicator(
                     modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
                     height = 3.dp,
                     color = Gold
                 )
-            }
-        ) {
+            }) {
             tabs.forEachIndexed { index, title ->
-                val count = if (index == 0) todayList.size else upcomingList.size
-                Tab(
-                    selected = selectedTab == index,
-                    onClick = { selectedTab = index },
-                    text = {
-                        Text(
-                            text = "$title ($count)",
-                            fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal,
-                            color = if (selectedTab == index) Gold else TextGray
-                        )
-                    }
-                )
+                val count = when (index) {
+                    0 -> todayAppointments.size
+                    1 -> upcomingAppointments.size
+                    else -> pastAppointments.size
+                }
+                Tab(selected = selectedTab == index, onClick = { selectedTab = index }, text = {
+                    Text(
+                        text = "$title ($count)",
+                        fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal,
+                        color = if (selectedTab == index) Gold else TextGray
+                    )
+                })
             }
         }
 
-        val currentList = if (selectedTab == 0) todayList else upcomingList
-
-        if (currentList.isEmpty()) {
+        if (isLoading && appointments.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = Gold)
+            }
+        } else if (errorMessage != null) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = "Error", color = RedCancel, fontSize = 16.sp
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = errorMessage!!,
+                    color = TextGray,
+                    fontSize = 14.sp,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = { viewModel.loadAppointments(stylistId) },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Gold, contentColor = CarbonBlack
+                    )
+                ) {
+                    Text("Reintentar")
+                }
+            }
+        } else if (currentList.isEmpty()) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -137,9 +198,11 @@ fun AdminAppointmentsScreen(stylistId: Int = 0) {
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = if (selectedTab == 0) "No hay citas para hoy" else "No hay citas próximas",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = TextGray
+                    text = when (selectedTab) {
+                        0 -> "No hay citas para hoy"
+                        1 -> "No hay citas próximas"
+                        else -> "No hay citas pasadas"
+                    }, style = MaterialTheme.typography.bodyLarge, color = TextGray
                 )
             }
         } else {
@@ -147,13 +210,12 @@ fun AdminAppointmentsScreen(stylistId: Int = 0) {
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                    .padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 currentList.forEach { appointment ->
                     AdminAppointmentCard(
                         appointment = appointment,
-                        showStylistName = isGenericAdmin,
+                        showStylistName = stylistId == 0,
                         onConfirmClick = {
                             targetAppointment = appointment
                             showConfirmDialog = true
@@ -161,51 +223,17 @@ fun AdminAppointmentsScreen(stylistId: Int = 0) {
                         onCancelClick = {
                             targetAppointment = appointment
                             showCancelDialog = true
-                        }
-                    )
+                        },
+                        onCompleteClick = {
+                            targetAppointment = appointment
+                            showCompleteDialog = true
+                        })
                 }
                 Spacer(modifier = Modifier.height(8.dp))
             }
-        )
+        }
     }
 
-    if (showCancelDialog && targetAppointment != null) {
-        val appt = targetAppointment!!
-        AlertDialog(
-            onDismissRequest = { showCancelDialog = false; targetAppointment = null },
-            containerColor = DarkGray,
-            titleContentColor = White,
-            textContentColor = TextGray,
-            title = { Text("Cancelar cita", fontWeight = FontWeight.Bold) },
-            text = { Text("¿Cancelar la cita de ${appt.clientName}? Esta acción no se puede deshacer.") },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        val id = appt.id
-                        if (selectedTab == 0) {
-                            todayList = todayList.filter { it.id != id }
-                        } else {
-                            upcomingList = upcomingList.filter { it.id != id }
-                        }
-                        showCancelDialog = false
-                        targetAppointment = null
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = RedCancel,
-                        contentColor = White
-                    ),
-                    shape = RoundedCornerShape(8.dp)
-                ) { Text("Sí, cancelar") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showCancelDialog = false; targetAppointment = null }) {
-                    Text("No, volver", color = Gold)
-                }
-            }
-        )
-    }
-
-    // Diálogo confirmar
     if (showConfirmDialog && targetAppointment != null) {
         val appt = targetAppointment!!
         AlertDialog(
@@ -214,31 +242,25 @@ fun AdminAppointmentsScreen(stylistId: Int = 0) {
             titleContentColor = White,
             textContentColor = TextGray,
             title = { Text("Confirmar cita", fontWeight = FontWeight.Bold) },
-            text = { Text("¿Confirmar la cita de ${appt.clientName} a las ${appt.time}?") },
+            text = { Text("¿Confirmar la cita de ${appt.clientName} a las ${appt.timeLabel}?") },
             confirmButton = {
                 Button(
                     onClick = {
-                        if (selectedTab == 0) {
-                            todayList = todayList.map { if (it.id == appt.id) it.copy(confirmed = true) else it }
-                        } else {
-                            upcomingList = upcomingList.map { if (it.id == appt.id) it.copy(confirmed = true) else it }
-                        }
+                        viewModel.confirmAppointment(appt.id)
                         showConfirmDialog = false
                         targetAppointment = null
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = GreenConfirmed, contentColor = White),
-                    shape = RoundedCornerShape(8.dp)
+                    }, colors = ButtonDefaults.buttonColors(
+                        containerColor = GreenConfirmed, contentColor = White
+                    ), shape = RoundedCornerShape(8.dp)
                 ) { Text("Confirmar") }
             },
             dismissButton = {
                 TextButton(onClick = { showConfirmDialog = false; targetAppointment = null }) {
                     Text("Volver", color = Gold)
                 }
-            }
-        )
+            })
     }
 
-    // Diálogo cancelar
     if (showCancelDialog && targetAppointment != null) {
         val appt = targetAppointment!!
         AlertDialog(
@@ -251,38 +273,57 @@ fun AdminAppointmentsScreen(stylistId: Int = 0) {
             confirmButton = {
                 Button(
                     onClick = {
-                        if (selectedTab == 0) {
-                            todayList = todayList.filter { it.id != appt.id }
-                        } else {
-                            upcomingList = upcomingList.filter { it.id != appt.id }
-                        }
+                        viewModel.cancelAppointment(appt.id)
                         showCancelDialog = false
                         targetAppointment = null
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = RedCancel, contentColor = White),
-                    shape = RoundedCornerShape(8.dp)
+                    }, colors = ButtonDefaults.buttonColors(
+                        containerColor = RedCancel, contentColor = White
+                    ), shape = RoundedCornerShape(8.dp)
                 ) { Text("Sí, cancelar") }
             },
             dismissButton = {
                 TextButton(onClick = { showCancelDialog = false; targetAppointment = null }) {
                     Text("No, volver", color = Gold)
                 }
-            }
-        )
+            })
+    }
+
+    if (showCompleteDialog && targetAppointment != null) {
+        val appt = targetAppointment!!
+        AlertDialog(
+            onDismissRequest = { showCompleteDialog = false; targetAppointment = null },
+            containerColor = DarkGray,
+            titleContentColor = White,
+            textContentColor = TextGray,
+            title = { Text("Completar cita", fontWeight = FontWeight.Bold) },
+            text = { Text("¿Marcar como completada la cita de ${appt.clientName}?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.completeAppointment(appt.id)
+                        showCompleteDialog = false
+                        targetAppointment = null
+                    }, colors = ButtonDefaults.buttonColors(
+                        containerColor = BlueCompleted, contentColor = White
+                    ), shape = RoundedCornerShape(8.dp)
+                ) { Text("Completar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCompleteDialog = false; targetAppointment = null }) {
+                    Text("Volver", color = Gold)
+                }
+            })
     }
 }
 
 @Composable
 private fun AdminAppointmentCard(
-    appointment: StylistAppointment,
+    appointment: AdminAppointment,
     showStylistName: Boolean,
     onConfirmClick: () -> Unit,
-    onCancelClick: () -> Unit
+    onCancelClick: () -> Unit,
+    onCompleteClick: () -> Unit
 ) {
-    val statusColor = if (appointment.confirmed) GreenConfirmed else AmberYellow
-    val statusIcon = if (appointment.confirmed) Icons.Default.CheckCircle else Icons.Default.Schedule
-    val statusLabel = if (appointment.confirmed) "Confirmada" else "Pendiente"
-
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = CardBg),
@@ -295,13 +336,18 @@ private fun AdminAppointmentCard(
                     modifier = Modifier
                         .size(48.dp)
                         .clip(CircleShape)
-                        .background(statusColor.copy(alpha = 0.15f)),
+                        .background(appointment.statusColor.copy(alpha = 0.15f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = statusIcon,
-                        contentDescription = statusLabel,
-                        tint = statusColor,
+                        imageVector = when (appointment.status) {
+                            1 -> Icons.Default.CheckCircle
+                            2 -> Icons.Default.Done
+                            3 -> Icons.Default.Cancel
+                            else -> Icons.Default.Schedule
+                        },
+                        contentDescription = appointment.statusText,
+                        tint = appointment.statusColor,
                         modifier = Modifier.size(26.dp)
                     )
                 }
@@ -320,12 +366,9 @@ private fun AdminAppointmentCard(
                         style = MaterialTheme.typography.bodyMedium,
                         color = GoldLight
                     )
-                    // Si es admin general, muestra el peluquero asignado
                     if (showStylistName) {
-                        val stylistName = com.example.hairup.model.mockStylists
-                            .find { it.id == appointment.stylistId }?.name ?: ""
                         Text(
-                            text = stylistName,
+                            text = "Con: ${appointment.stylistName}",
                             style = MaterialTheme.typography.bodySmall,
                             color = TextGray,
                             fontSize = 11.sp
@@ -335,7 +378,7 @@ private fun AdminAppointmentCard(
 
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        text = appointment.time,
+                        text = appointment.timeLabel,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = Gold
@@ -363,23 +406,22 @@ private fun AdminAppointmentCard(
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(20.dp))
-                        .background(statusColor.copy(alpha = 0.15f))
+                        .background(appointment.statusColor.copy(alpha = 0.15f))
                         .padding(horizontal = 10.dp, vertical = 4.dp)
                 ) {
                     Text(
-                        text = statusLabel,
+                        text = appointment.statusText,
                         style = MaterialTheme.typography.labelSmall,
-                        color = statusColor,
+                        color = appointment.statusColor,
                         fontWeight = FontWeight.Bold,
                         fontSize = 11.sp
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (!appointment.confirmed) {
+            if (appointment.isPending) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
                         onClick = onConfirmClick,
                         modifier = Modifier.weight(1f),
@@ -390,24 +432,39 @@ private fun AdminAppointmentCard(
                         shape = RoundedCornerShape(10.dp),
                         elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
                     ) {
-                        Icon(Icons.Default.Done, null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.CheckCircle, null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("Confirmar", fontWeight = FontWeight.Medium)
                     }
+                    Button(
+                        onClick = onCancelClick,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = RedCancel.copy(alpha = 0.12f), contentColor = RedCancel
+                        ),
+                        shape = RoundedCornerShape(10.dp),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
+                    ) {
+                        Icon(Icons.Default.Cancel, null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Cancelar", fontWeight = FontWeight.Medium)
+                    }
                 }
+            } else if (appointment.isConfirmed) {
+                Spacer(modifier = Modifier.height(12.dp))
                 Button(
-                    onClick = onCancelClick,
-                    modifier = Modifier.weight(1f),
+                    onClick = onCompleteClick,
+                    modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = RedCancel.copy(alpha = 0.12f),
-                        contentColor = RedCancel
+                        containerColor = BlueCompleted.copy(alpha = 0.15f),
+                        contentColor = BlueCompleted
                     ),
                     shape = RoundedCornerShape(10.dp),
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
                 ) {
-                    Icon(Icons.Default.Cancel, null, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Default.Done, null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Cancelar", fontWeight = FontWeight.Medium)
+                    Text("Marcar como completada", fontWeight = FontWeight.Medium)
                 }
             }
         }

@@ -3,15 +3,14 @@ package com.example.hairup.ui.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.hairup.api.models.*
+import com.example.hairup.api.models.AddPointsRequest
+import com.example.hairup.api.models.AddPointsResponse
 import com.example.hairup.data.SessionManager
 import com.example.hairup.data.repository.BookingRepository
 import com.example.hairup.model.Service
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.*
 
 class BookingViewModel(
     private val sessionManager: SessionManager,
@@ -37,10 +36,7 @@ class BookingViewModel(
     val bookingSuccess: StateFlow<Int?> = _bookingSuccess
 
     data class BarberItem(
-        val id: Int,
-        val name: String,
-        val specialty: String,
-        val initial: String
+        val id: Int, val name: String, val specialty: String, val initial: String
     )
 
     private var currentBarberId: Int? = null
@@ -62,16 +58,13 @@ class BookingViewModel(
 
         repository.getServices(token) { result ->
             viewModelScope.launch {
-                result.fold(
-                    onSuccess = { serviceResponses ->
-                        _services.value = serviceResponses.map { it.toService() }
-                        _isLoading.value = false
-                    },
-                    onFailure = { exception ->
-                        _errorMessage.value = exception.message ?: "Error al cargar servicios"
-                        _isLoading.value = false
-                    }
-                )
+                result.fold(onSuccess = { serviceResponses ->
+                    _services.value = serviceResponses.map { it.toService() }
+                    _isLoading.value = false
+                }, onFailure = { exception ->
+                    _errorMessage.value = exception.message ?: "Error al cargar servicios"
+                    _isLoading.value = false
+                })
             }
         }
     }
@@ -85,32 +78,28 @@ class BookingViewModel(
 
         repository.getBarbers(token) { result ->
             viewModelScope.launch {
-                result.fold(
-                    onSuccess = { barberResponses ->
-                        val barberList = mutableListOf(
+                result.fold(onSuccess = { barberResponses ->
+                    val barberList = mutableListOf(
+                        BarberItem(
+                            id = -1,
+                            name = "Sin preferencia",
+                            specialty = "Cualquier profesional disponible",
+                            initial = "?"
+                        )
+                    )
+                    barberList.addAll(
+                        barberResponses.map {
                             BarberItem(
-                                id = -1,
-                                name = "Sin preferencia",
-                                specialty = "Cualquier profesional disponible",
-                                initial = "?"
+                                id = it.id,
+                                name = it.name,
+                                specialty = "Peluquero/a",
+                                initial = it.name.first().toString()
                             )
-                        )
-                        barberList.addAll(
-                            barberResponses.map {
-                                BarberItem(
-                                    id = it.id,
-                                    name = it.name,
-                                    specialty = "Peluquero/a",
-                                    initial = it.name.first().toString()
-                                )
-                            }
-                        )
-                        _barbers.value = barberList
-                    },
-                    onFailure = { exception ->
-                        _errorMessage.value = exception.message ?: "Error al cargar barberos"
-                    }
-                )
+                        })
+                    _barbers.value = barberList
+                }, onFailure = { exception ->
+                    _errorMessage.value = exception.message ?: "Error al cargar barberos"
+                })
             }
         }
     }
@@ -133,29 +122,21 @@ class BookingViewModel(
 
         repository.getBarberAvailability(token, barberId, date) { result ->
             viewModelScope.launch {
-                result.fold(
-                    onSuccess = { availability ->
-                        val slots = availability.availableSlots
-                            .filter { it.available }
-                            .map { it.time.substring(0, 5) }
-                        _availableSlots.value = slots
-                        _isLoading.value = false
-                    },
-                    onFailure = { exception ->
-                        _errorMessage.value = exception.message ?: "Error al cargar disponibilidad"
-                        _isLoading.value = false
-                    }
-                )
+                result.fold(onSuccess = { availability ->
+                    val slots = availability.availableSlots.filter { it.available }
+                        .map { it.time.substring(0, 5) }
+                    _availableSlots.value = slots
+                    _isLoading.value = false
+                }, onFailure = { exception ->
+                    _errorMessage.value = exception.message ?: "Error al cargar disponibilidad"
+                    _isLoading.value = false
+                })
             }
         }
     }
 
     fun createBooking(
-        serviceId: Int,
-        date: String,
-        time: String,
-        barberId: Int,
-        callback: (Boolean) -> Unit
+        serviceId: Int, date: String, time: String, barberId: Int, callback: (Boolean) -> Unit
     ) {
         val token = sessionManager.getToken()
         if (token.isNullOrEmpty()) {
@@ -170,71 +151,52 @@ class BookingViewModel(
 
         repository.createBooking(token, serviceId, date, time, finalBarberId) { result ->
             viewModelScope.launch {
-                result.fold(
-                    onSuccess = { bookingId ->
-                        // Buscar el servicio para obtener los puntos
-                        val service = _services.value.find { it.id == serviceId }
-                        val pointsToAdd = service?.xp ?: 0
+                result.fold(onSuccess = { bookingId ->
+                    // Buscar el servicio para obtener los puntos
+                    val service = _services.value.find { it.id == serviceId }
+                    val pointsToAdd = service?.xp ?: 0
 
-                        if (pointsToAdd > 0) {
-                            // Crear lista de PurchaseItem simulada para usar el mismo método
-                            // Necesitamos obtener el producto/servicio como si fuera una compra
-                            // Pero como no tenemos un producto real, necesitamos otra aproximación
-
-                            // Alternativa 1: Usar el repositorio directamente con el token y puntos
-                            // Necesitaríamos añadir un método en ShopRepository para esto
-
-                            // Por ahora, marcar éxito y luego actualizaremos
-                            _bookingSuccess.value = bookingId
-                            _isLoading.value = false
-                            callback(true)
-
-                            // Aquí deberíamos llamar a un método para añadir puntos
-                            addPointsForBooking(serviceId, pointsToAdd)
-                        } else {
-                            _bookingSuccess.value = bookingId
-                            _isLoading.value = false
-                            callback(true)
-                        }
-                    },
-                    onFailure = { exception ->
-                        _errorMessage.value = exception.message ?: "Error al crear la cita"
+                    if (pointsToAdd > 0) {
+                        _bookingSuccess.value = bookingId
                         _isLoading.value = false
-                        callback(false)
+                        callback(true)
+
+                        addPointsForBooking(serviceId, pointsToAdd)
+                    } else {
+                        _bookingSuccess.value = bookingId
+                        _isLoading.value = false
+                        callback(true)
                     }
-                )
+                }, onFailure = { exception ->
+                    _errorMessage.value = exception.message ?: "Error al crear la cita"
+                    _isLoading.value = false
+                    callback(false)
+                })
             }
         }
     }
 
-    // Nuevo método para añadir puntos de la cita
     private fun addPointsForBooking(serviceId: Int, points: Int) {
         val token = sessionManager.getToken() ?: return
 
-        // Necesitamos el ShopRepository
-        val shopRepository = com.example.hairup.data.repository.ShopRepository()
+        com.example.hairup.data.repository.ShopRepository()
 
-        // Crear un PurchaseItem ficticio (solo para usar el método existente)
-        // Esto no es ideal, mejor sería tener un método específico
 
-        // Alternativa: usar directamente el API call
-        val request = com.example.hairup.api.models.AddPointsRequest(points)
+        val request = AddPointsRequest(points)
 
-        // Llamada directa al API
-        val call = com.example.hairup.api.RetrofitClient.apiService.addPoints("Bearer $token", request)
-        call.enqueue(object : retrofit2.Callback<com.example.hairup.api.models.AddPointsResponse> {
+        val call =
+            com.example.hairup.api.RetrofitClient.apiService.addPoints("Bearer $token", request)
+        call.enqueue(object : retrofit2.Callback<AddPointsResponse> {
             override fun onResponse(
-                call: retrofit2.Call<com.example.hairup.api.models.AddPointsResponse>,
-                response: retrofit2.Response<com.example.hairup.api.models.AddPointsResponse>
+                call: retrofit2.Call<AddPointsResponse>,
+                response: retrofit2.Response<AddPointsResponse>
             ) {
                 if (response.isSuccessful) {
                     response.body()?.let { body ->
                         if (body.success) {
-                            // Actualizar usuario en SessionManager
                             sessionManager.getUser()?.let { user ->
                                 val updatedUser = user.copy(
-                                    xp = body.newXp,
-                                    points = body.newPoints
+                                    xp = body.newXp, points = body.newPoints
                                 )
                                 sessionManager.saveAuthData(token, updatedUser)
                             }
@@ -244,7 +206,10 @@ class BookingViewModel(
                 }
             }
 
-            override fun onFailure(call: retrofit2.Call<com.example.hairup.api.models.AddPointsResponse>, t: Throwable) {
+            override fun onFailure(
+                call: retrofit2.Call<AddPointsResponse>,
+                t: Throwable
+            ) {
                 Log.e("BookingViewModel", "Error al añadir puntos de cita", t)
             }
         })

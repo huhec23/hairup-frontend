@@ -33,10 +33,7 @@ fun getLevelColor(levelName: String): Color = when (levelName) {
 
 @Composable
 fun LevelIcon(
-    levelName: String,
-    size: Dp,
-    modifier: Modifier = Modifier,
-    showGlow: Boolean = false
+    levelName: String, size: Dp, modifier: Modifier = Modifier, showGlow: Boolean = false
 ) {
     val levelColor = getLevelColor(levelName)
     val icon = if (levelName == "Platino") Icons.Filled.Diamond else Icons.Filled.WorkspacePremium
@@ -49,18 +46,13 @@ fun LevelIcon(
             .background(levelColor.copy(alpha = 0.15f))
             .then(
                 if (showGlow) Modifier.border(
-                    width = 2.5.dp,
-                    brush = Brush.linearGradient(
+                    width = 2.5.dp, brush = Brush.linearGradient(
                         colors = listOf(
-                            levelColor.copy(alpha = 0.6f),
-                            levelColor,
-                            levelColor.copy(alpha = 0.6f)
+                            levelColor.copy(alpha = 0.6f), levelColor, levelColor.copy(alpha = 0.6f)
                         )
-                    ),
-                    shape = CircleShape
+                    ), shape = CircleShape
                 ) else Modifier
-            ),
-        contentAlignment = Alignment.Center
+            ), contentAlignment = Alignment.Center
     ) {
         Icon(
             imageVector = icon,

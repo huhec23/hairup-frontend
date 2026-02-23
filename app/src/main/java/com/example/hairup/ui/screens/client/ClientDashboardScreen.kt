@@ -52,7 +52,6 @@ import com.example.hairup.model.User
 import com.example.hairup.ui.components.LevelIcon
 import com.example.hairup.ui.viewmodel.HomeViewModel
 
-// Colores del tema
 private val CarbonBlack = Color(0xFF121212)
 private val DarkGray = Color(0xFF1E1E1E)
 private val Gold = Color(0xFFD4AF37)
@@ -80,7 +79,6 @@ fun ClientDashboardContent(
             .padding(16.dp)
             .background(CarbonBlack)
     ) {
-        // Loyalty Card - Premium
         LoyaltyCard(
             user = user,
             currentLevel = currentLevel,
@@ -90,7 +88,6 @@ fun ClientDashboardContent(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Acciones Rapidas
         Text(
             text = "Acciones Rapidas",
             style = MaterialTheme.typography.titleMedium,
@@ -123,7 +120,6 @@ fun ClientDashboardContent(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Next Appointment (si existe)
         if (nextAppointment != null) {
             Text(
                 text = "Proxima Cita",
@@ -146,7 +142,6 @@ fun ClientDashboardContent(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
 
-                    // Formatear fecha (asumiendo formato YYYY-MM-DD)
                     val dateParts = nextAppointment.date.split("-")
                     val formattedDate = if (dateParts.size == 3) {
                         "${dateParts[2]}/${dateParts[1]}/${dateParts[0]}"
@@ -167,7 +162,6 @@ fun ClientDashboardContent(
                 }
             }
         } else {
-            // Si no hay próxima cita, mostrar card para reservar
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -216,7 +210,6 @@ private fun LoyaltyCard(
     } else 1f
     val xpRemaining = nextLevel?.required?.minus(user.xp) ?: 0
 
-    // Shimmer animation
     val infiniteTransition = rememberInfiniteTransition(label = "shimmer")
     val shimmerOffset by infiniteTransition.animateFloat(
         initialValue = -300f, targetValue = 600f, animationSpec = infiniteRepeatable(
@@ -243,7 +236,6 @@ private fun LoyaltyCard(
         shape = RoundedCornerShape(20.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
-        // Top accent bar with gradient
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -256,7 +248,6 @@ private fun LoyaltyCard(
         )
 
         Column(modifier = Modifier.padding(20.dp)) {
-            // Level badge + name
             Row(
                 verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()
             ) {
@@ -280,7 +271,6 @@ private fun LoyaltyCard(
                     )
                 }
 
-                // Arrow indicator
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = "Ver fidelidad",
@@ -291,7 +281,6 @@ private fun LoyaltyCard(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // XP display
             Row(
                 verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth()
             ) {
@@ -312,7 +301,6 @@ private fun LoyaltyCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Progress bar with gradient
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -335,7 +323,6 @@ private fun LoyaltyCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Progress text
             Row(
                 modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween
             ) {
@@ -362,7 +349,6 @@ private fun LoyaltyCard(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // CTA
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center,

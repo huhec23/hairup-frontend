@@ -12,60 +12,58 @@ import retrofit2.Response
 
 class RewardRepository {
 
-    private val TAG = "RewardRepository"
+    private val tag = "RewardRepository"
 
     fun getRewards(token: String, callback: (Result<List<RewardResponse>>) -> Unit) {
-        Log.d(TAG, "Obteniendo recompensas")
+        Log.d(tag, "Obteniendo recompensas")
 
-        RetrofitClient.apiService.getRewards("Bearer $token").enqueue(object : Callback<RewardsResponse> {
-            override fun onResponse(
-                call: Call<RewardsResponse>,
-                response: Response<RewardsResponse>
-            ) {
-                if (response.isSuccessful) {
-                    val rewards = response.body()?.data ?: emptyList()
-                    callback(Result.success(rewards))
-                } else {
-                    callback(Result.failure(Exception("Error ${response.code()}")))
+        RetrofitClient.apiService.getRewards("Bearer $token")
+            .enqueue(object : Callback<RewardsResponse> {
+                override fun onResponse(
+                    call: Call<RewardsResponse>, response: Response<RewardsResponse>
+                ) {
+                    if (response.isSuccessful) {
+                        val rewards = response.body()?.data ?: emptyList()
+                        callback(Result.success(rewards))
+                    } else {
+                        callback(Result.failure(Exception("Error ${response.code()}")))
+                    }
                 }
-            }
 
-            override fun onFailure(call: Call<RewardsResponse>, t: Throwable) {
-                callback(Result.failure(t))
-            }
-        })
+                override fun onFailure(call: Call<RewardsResponse>, t: Throwable) {
+                    callback(Result.failure(t))
+                }
+            })
     }
 
     fun redeemReward(
-        token: String,
-        rewardId: Int,
-        callback: (Result<RedeemResponse>) -> Unit
+        token: String, rewardId: Int, callback: (Result<RedeemResponse>) -> Unit
     ) {
-        Log.d(TAG, "Canjeando recompensa $rewardId")
+        Log.d(tag, "Canjeando recompensa $rewardId")
 
         val request = RedeemRequest(rewardId)
 
-        RetrofitClient.apiService.redeemReward("Bearer $token", request).enqueue(object : Callback<RedeemResponse> {
-            override fun onResponse(
-                call: Call<RedeemResponse>,
-                response: Response<RedeemResponse>
-            ) {
-                if (response.isSuccessful) {
-                    response.body()?.let { callback(Result.success(it)) }
-                        ?: callback(Result.failure(Exception("Respuesta vacía")))
-                } else {
-                    val errorMsg = try {
-                        response.errorBody()?.string() ?: "Error ${response.code()}"
-                    } catch (e: Exception) {
-                        "Error ${response.code()}"
+        RetrofitClient.apiService.redeemReward("Bearer $token", request)
+            .enqueue(object : Callback<RedeemResponse> {
+                override fun onResponse(
+                    call: Call<RedeemResponse>, response: Response<RedeemResponse>
+                ) {
+                    if (response.isSuccessful) {
+                        response.body()?.let { callback(Result.success(it)) }
+                            ?: callback(Result.failure(Exception("Respuesta vacía")))
+                    } else {
+                        val errorMsg = try {
+                            response.errorBody()?.string() ?: "Error ${response.code()}"
+                        } catch (_: Exception) {
+                            "Error ${response.code()}"
+                        }
+                        callback(Result.failure(Exception(errorMsg)))
                     }
-                    callback(Result.failure(Exception(errorMsg)))
                 }
-            }
 
-            override fun onFailure(call: Call<RedeemResponse>, t: Throwable) {
-                callback(Result.failure(t))
-            }
-        })
+                override fun onFailure(call: Call<RedeemResponse>, t: Throwable) {
+                    callback(Result.failure(t))
+                }
+            })
     }
 }

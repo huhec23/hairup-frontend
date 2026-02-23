@@ -18,7 +18,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Divider
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -49,8 +48,7 @@ import com.example.hairup.ui.viewmodel.AuthViewModelFactory
 
 @Composable
 fun LoginScreen(
-    onLoginSuccess: (isAdmin: Boolean, stylistId: Int) -> Unit,
-    onNavigateToRegister: () -> Unit = {}
+    onLoginSuccess: (Boolean) -> Unit, onNavigateToRegister: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val sessionManager = remember { SessionManager(context) }
@@ -69,10 +67,12 @@ fun LoginScreen(
                 is AuthViewModel.AuthState.Success -> {
                     onLoginSuccess(state.isAdmin)
                 }
+
                 is AuthViewModel.AuthState.Error -> {
                     showError = true
                     errorMessage = state.message
                 }
+
                 else -> {}
             }
         }
@@ -95,12 +95,10 @@ fun LoginScreen(
                 modifier = Modifier
                     .size(200.dp)
                     .border(
-                        width = 3.dp,
-                        color = Color(0xFFD4AF37), // Gold
+                        width = 3.dp, color = Color(0xFFD4AF37),
                         shape = CircleShape
                     )
-                    .padding(12.dp),
-                contentAlignment = Alignment.Center
+                    .padding(12.dp), contentAlignment = Alignment.Center
             ) {
                 Image(
                     painter = painterResource(id = R.drawable.logo),
@@ -108,7 +106,7 @@ fun LoginScreen(
                     modifier = Modifier
                         .size(176.dp)
                         .clip(CircleShape),
-                    colorFilter = ColorFilter.tint(Color(0xFFD4AF37)) // Gold
+                    colorFilter = ColorFilter.tint(Color(0xFFD4AF37))
                 )
             }
 
@@ -142,24 +140,19 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(40.dp))
 
             AppTextInput(
-                value = email,
-                onValueChange = {
+                value = email, onValueChange = {
                     email = it
                     showError = false
-                },
-                label = "Correo electrónico"
+                }, label = "Correo electrónico"
             )
 
             Spacer(modifier = Modifier.height(20.dp))
 
             AppTextInput(
-                value = password,
-                onValueChange = {
+                value = password, onValueChange = {
                     password = it
                     showError = false
-                },
-                label = "Contraseña",
-                visualTransformation = PasswordVisualTransformation()
+                }, label = "Contraseña", visualTransformation = PasswordVisualTransformation()
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -167,7 +160,7 @@ fun LoginScreen(
             if (showError) {
                 Text(
                     text = errorMessage,
-                    color = Color(0xFFFF6B6B), // Red
+                    color = Color(0xFFFF6B6B),
                     fontSize = 14.sp,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(vertical = 8.dp)
@@ -179,18 +172,15 @@ fun LoginScreen(
             when (val state = viewModel.loginState.value) {
                 is AuthViewModel.AuthState.Loading -> {
                     AppButton(
-                        text = "INICIANDO SESIÓN...",
-                        onClick = {},
-                        enabled = false
+                        text = "INICIANDO SESIÓN...", onClick = {}, enabled = false
                     )
                 }
+
                 else -> {
                     AppButton(
-                        text = "INICIAR SESIÓN",
-                        onClick = {
+                        text = "INICIAR SESIÓN", onClick = {
                             viewModel.login(email, password)
-                        },
-                        enabled = email.isNotBlank() && password.isNotBlank()
+                        }, enabled = email.isNotBlank() && password.isNotBlank()
                     )
                 }
             }
@@ -199,15 +189,11 @@ fun LoginScreen(
 
             TextButton(onClick = onNavigateToRegister) {
                 Text(
-                    text = "¿No tienes cuenta? ",
-                    color = Color(0xFFB0B0B0),
-                    fontSize = 14.sp
+                    text = "¿No tienes cuenta? ", color = Color(0xFFB0B0B0), fontSize = 14.sp
                 )
                 Text(
-                    text = "Regístrate",
-                    color = Color(0xFFD4AF37), // Gold
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold
+                    text = "Regístrate", color = Color(0xFFD4AF37),
+                    fontSize = 14.sp, fontWeight = FontWeight.Bold
                 )
             }
         }
@@ -222,9 +208,7 @@ private fun DecorativeLine() {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Divider(
-            modifier = Modifier.weight(1f),
-            thickness = 1.dp,
-            color = Color(0xFFD4AF37) // Gold
+            modifier = Modifier.weight(1f), thickness = 1.dp, color = Color(0xFFD4AF37)
         )
         Spacer(modifier = Modifier.width(8.dp))
         Box(
@@ -234,9 +218,7 @@ private fun DecorativeLine() {
         )
         Spacer(modifier = Modifier.width(8.dp))
         Divider(
-            modifier = Modifier.weight(1f),
-            thickness = 1.dp,
-            color = Color(0xFFD4AF37) // Gold
+            modifier = Modifier.weight(1f), thickness = 1.dp, color = Color(0xFFD4AF37)
         )
     }
 }
