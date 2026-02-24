@@ -91,16 +91,20 @@ class HomeViewModel(
                 Log.d(tag, "Nivel actual: ${currentLevel.name} (ID: ${currentLevel.id})")
                 Log.d(tag, "Siguiente nivel: ${nextLevel?.name ?: "Ninguno"}")
 
-                val nextAppointment = if (appointment != null) {
-                    Log.d(tag, "Creando NextAppointment con: ${appointment.serviceName}")
+                val nextAppointment = if (appointment != null &&
+                    !appointment.serviceName.isNullOrEmpty() &&
+                    !appointment.date.isNullOrEmpty() &&
+                    !appointment.time.isNullOrEmpty()
+                ) {
+                    Log.d(tag, "Creando NextAppointment con servicio: ${appointment.serviceName}")
                     NextAppointment(
-                        serviceName = appointment.serviceName,
-                        date = appointment.date,
-                        time = appointment.time,
-                        stylistName = appointment.stylistName
+                        serviceName = appointment.serviceName!!,
+                        date = appointment.date!!,
+                        time = appointment.time!!,
+                        stylistName = appointment.stylistName ?: "Peluquero"
                     )
                 } else {
-                    Log.d(tag, "No hay cita, nextAppointment = null")
+                    Log.d(tag, "No hay cita válida, nextAppointment = null")
                     null
                 }
 
